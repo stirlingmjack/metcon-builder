@@ -37,9 +37,9 @@
     // Off by default — not mentioned as owned gear, but left wired up so
     // they're one checkbox away if the home gym grows.
     barbell: { enabled: false, weightsKg: [] },
-    dumbbells: { enabled: false, weightsKg: [] },
+    dumbbells: { enabled: true, weightsKg: [22.5, 22.5] },
     pullupBar: false,
-    jumpRope: false,
+    jumpRope: true,
     plyoBox: false,
     // 'small' | 'medium' | 'large'
     space: "medium",
@@ -122,7 +122,7 @@
     { id: "su", name: "Single-Unders", category: "jumprope", equipment: "jumpRope", space: "small", pattern: "cardio", scheme: "reps", base: [30, 50] },
     { id: "box_jump", name: "Box Jumps", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14], scaleNote: "Scale to step-ups if needed." },
     { id: "box_step_up", name: "Box Step-ups (each side)", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
-    { id: "db_thruster", name: "Dumbbell Thrusters", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
+    { id: "db_thruster", name: "Dumbbell Thrusters", category: "dumbbell", equipment: "dumbbells", requiresPair: true, space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
     { id: "db_snatch", name: "DB Single-Arm Snatch", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
     { id: "bb_thruster", name: "Barbell Thrusters", category: "barbell", equipment: "barbell", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
     { id: "bb_deadlift", name: "Barbell Deadlifts", category: "barbell", equipment: "barbell", space: "small", pattern: "hinge", scheme: "reps", base: [8, 14] },
