@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metcon Builder</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6a3d'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%231a0e08' font-family='sans-serif'%3E%F0%9F%94%A5%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div>
+        <h1>Metcon Builder</h1>
+        <p class="subtitle" id="today-label"></p>
+      </div>
+      <button id="settings-toggle" class="btn btn-ghost" type="button" aria-expanded="false" aria-controls="settings-panel">
+        ⚙ Settings
+      </button>
+    </header>
+
+    <section id="settings-panel" class="panel settings-panel hidden">
+      <h2>Equipment &amp; Space</h2>
+      <form id="settings-form">
+        <div class="settings-grid">
+          <fieldset>
+            <legend>Cardio machines</legend>
+            <label class="checkbox-row"><input type="checkbox" id="eq-bike" /> Bike erg</label>
+            <label class="checkbox-row"><input type="checkbox" id="eq-row" /> Row erg</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Kettlebells</legend>
+            <label class="checkbox-row"><input type="checkbox" id="eq-kb-enabled" /> I have kettlebells</label>
+            <label class="field-row">
+              Weights (kg), one per bell you own, comma-separated
+              <input type="text" id="eq-kb-weights" placeholder="e.g. 16, 16, 20, 24, 24, 28" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Sandbags</legend>
+            <label class="checkbox-row"><input type="checkbox" id="eq-sb-enabled" /> I have sandbag(s)</label>
+            <label class="field-row">
+              Weights (kg), comma-separated
+              <input type="text" id="eq-sb-weights" placeholder="e.g. 50, 90" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Space</legend>
+            <label class="field-row">
+              How much open floor space do you have?
+              <select id="eq-space">
+                <option value="small">Small (mat-sized)</option>
+                <option value="medium">Medium (garage bay / living room)</option>
+                <option value="large">Large (yard / driveway)</option>
+              </select>
+            </label>
+          </fieldset>
+
+          <fieldset class="more-equipment">
+            <legend>More equipment (optional)</legend>
+            <label class="checkbox-row"><input type="checkbox" id="eq-pullup" /> Pull-up bar / rig</label>
+            <label class="checkbox-row"><input type="checkbox" id="eq-jumprope" /> Jump rope</label>
+            <label class="checkbox-row"><input type="checkbox" id="eq-box" /> Plyo box</label>
+            <label class="checkbox-row"><input type="checkbox" id="eq-barbell-enabled" /> Barbell</label>
+            <label class="field-row">
+              Barbell weights (kg), comma-separated
+              <input type="text" id="eq-barbell-weights" placeholder="e.g. 40, 60, 80" />
+            </label>
+            <label class="checkbox-row"><input type="checkbox" id="eq-db-enabled" /> Dumbbells</label>
+            <label class="field-row">
+              Dumbbell weights (kg), comma-separated
+              <input type="text" id="eq-db-weights" placeholder="e.g. 10, 15, 20" />
+            </label>
+          </fieldset>
+        </div>
+
+        <div class="settings-actions">
+          <button type="submit" class="btn btn-primary">Save settings</button>
+          <span id="settings-saved-msg" class="saved-msg hidden">Saved — today's workout updated.</span>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel controls-panel">
+      <div class="control-row">
+        <label class="field-row">
+          Duration
+          <select id="ctrl-duration">
+            <option value="10">10 min</option>
+            <option value="15">15 min</option>
+            <option value="20">20 min</option>
+            <option value="25">25 min</option>
+            <option value="30">30 min</option>
+            <option value="35">35 min</option>
+            <option value="40">40 min</option>
+            <option value="45">45 min</option>
+            <option value="60">60 min</option>
+          </select>
+        </label>
+        <label class="field-row">
+          Intensity
+          <select id="ctrl-intensity">
+            <option value="light">Light</option>
+            <option value="moderate">Moderate</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <button id="generate-btn" class="btn btn-primary" type="button">🎲 Generate / Regenerate</button>
+      </div>
+    </section>
+
+    <section class="panel workout-panel">
+      <div id="workout-card"></div>
+    </section>
+
+    <section class="panel log-panel">
+      <h2>Log today's session</h2>
+      <div class="log-row">
+        <label class="checkbox-row"><input type="checkbox" id="log-completed" /> Completed</label>
+        <label class="field-row inline">
+          Result
+          <select id="log-rx">
+            <option value="rx">Rx</option>
+            <option value="scaled">Scaled</option>
+          </select>
+        </label>
+      </div>
+      <label class="field-row">
+        Notes
+        <textarea id="log-notes" rows="3" placeholder="Score, how it felt, scaling used…"></textarea>
+      </label>
+      <button id="log-save-btn" class="btn btn-secondary" type="button">Save log</button>
+      <span id="log-saved-msg" class="saved-msg hidden">Saved.</span>
+    </section>
+
+    <section class="panel history-panel">
+      <h2>History</h2>
+      <div id="history-list" class="history-list"></div>
+    </section>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/rng.js"></script>
+  <script src="js/generator.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

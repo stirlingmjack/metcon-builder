@@ -1,0 +1,178 @@
+/**
+ * data.js — equipment defaults and the movement library.
+ *
+ * Pure data + no DOM access, so it can be loaded either as a browser
+ * <script> (exposes window.MetconData) or required from Node (module.exports),
+ * which is what test/generator.test.js does.
+ */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.MetconData = factory();
+  }
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------
+  // Equipment
+  // ---------------------------------------------------------------------
+
+  // Ships pre-filled with the gear described for this build. Everything
+  // here is editable from the Settings panel in the UI and persisted to
+  // localStorage, so this is only the first-run default.
+  var DEFAULT_EQUIPMENT = {
+    bodyweight: true, // always available, not user-toggleable
+    bikeErg: true,
+    rowErg: true,
+    kettlebells: {
+      enabled: true,
+      // one entry per bell you own, duplicates included (2x16 => two 16s)
+      weightsKg: [16, 16, 20, 24, 24, 28],
+    },
+    sandbags: {
+      enabled: true,
+      weightsKg: [50, 90],
+    },
+    // Off by default — not mentioned as owned gear, but left wired up so
+    // they're one checkbox away if the home gym grows.
+    barbell: { enabled: false, weightsKg: [] },
+    dumbbells: { enabled: false, weightsKg: [] },
+    pullupBar: false,
+    jumpRope: false,
+    plyoBox: false,
+    // 'small' | 'medium' | 'large'
+    space: "medium",
+  };
+
+  // ---------------------------------------------------------------------
+  // Movement library
+  // ---------------------------------------------------------------------
+  // equipment: key into the equipment config that must be enabled, or
+  //   null for bodyweight-only movements.
+  // requiresPair: needs two bells of the same weight available at once.
+  // space: minimum floor space required ('small' fits anywhere; 'medium'
+  //   needs a garage bay/living room; 'large' needs a yard/driveway).
+  // pattern: rough movement pattern, used to keep a single workout from
+  //   picking three squat-dominant movements in a row.
+  // scheme: unit the base range is expressed in — 'reps' | 'cals' | 'sec'.
+  // base: a [low, high] "moderate intensity, one round" range. The
+  //   generator scales this per format and per selected intensity.
+
+  var MOVEMENTS = [
+    // --- Cardio / monostructural ---------------------------------------
+    { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [10, 16] },
+    { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [10, 16] },
+    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [8, 15] },
+    { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12] },
+    { id: "mountain_climbers", name: "Mountain Climbers", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [20, 30] },
+    { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30] },
+    { id: "jumping_jacks", name: "Jumping Jacks", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [20, 30] },
+    { id: "shuttle_run", name: "Shuttle Runs", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [4, 8] },
+    { id: "star_jumps", name: "Star Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 20] },
+
+    // --- Bodyweight strength / gymnastic --------------------------------
+    { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [10, 18] },
+    { id: "air_squats", name: "Air Squats", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [15, 25] },
+    { id: "squat_jumps", name: "Squat Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [10, 18] },
+    { id: "walking_lunges", name: "Walking Lunges (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "squat", scheme: "reps", base: [16, 24] },
+    { id: "stationary_lunges", name: "Alternating Stationary Lunges", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [16, 24] },
+    { id: "situps", name: "Sit-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25] },
+    { id: "vups", name: "V-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [10, 18] },
+    { id: "plank_hold", name: "Plank Hold", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "sec", base: [30, 50] },
+    { id: "hollow_rock", name: "Hollow Rocks", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25] },
+    { id: "superman_raise", name: "Superman Raises", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [12, 20] },
+    { id: "bear_crawl", name: "Bear Crawl (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24] },
+    { id: "crab_walk", name: "Crab Walk (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24] },
+
+    // --- Kettlebell ------------------------------------------------------
+    { id: "kb_swing", name: "Kettlebell Swings", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "hinge", scheme: "reps", base: [15, 22] },
+    { id: "kb_goblet_squat", name: "KB Goblet Squats", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "squat", scheme: "reps", base: [12, 18] },
+    { id: "kb_clean_press", name: "KB Single-Arm Clean & Press", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "push", scheme: "reps", base: [8, 14] },
+    { id: "kb_snatch", name: "KB Single-Arm Snatch", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
+    { id: "kb_thruster", name: "KB Single-Arm Thruster", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
+    { id: "kb_suitcase_deadlift", name: "KB Suitcase Deadlifts", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "hinge", scheme: "reps", base: [12, 18] },
+    { id: "kb_row", name: "KB Single-Arm Row", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "pull", scheme: "reps", base: [10, 16] },
+    { id: "kb_tgu", name: "KB Turkish Get-ups (each side)", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "full", scheme: "reps", base: [3, 6] },
+    { id: "kb_front_rack_carry", name: "KB Front Rack Carry (steps)", category: "kettlebell", equipment: "kettlebells", requiresPair: true, space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
+    { id: "kb_suitcase_carry", name: "KB Suitcase Carry (steps)", category: "kettlebell", equipment: "kettlebells", space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
+    { id: "kb_halo", name: "KB Halos", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
+
+    // --- Sandbag -----------------------------------------------------
+    { id: "sb_squat", name: "Sandbag Squats", category: "sandbag", equipment: "sandbags", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
+    { id: "sb_lunge", name: "Sandbag Alternating Lunges", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "squat", scheme: "reps", base: [14, 20] },
+    { id: "sb_clean", name: "Sandbag Cleans", category: "sandbag", equipment: "sandbags", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
+    { id: "sb_over_shoulder", name: "Sandbag Over-the-Shoulder", category: "sandbag", equipment: "sandbags", space: "small", pattern: "carry", scheme: "reps", base: [8, 14] },
+    { id: "sb_bear_hug_carry", name: "Sandbag Bear Hug Carry (steps)", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "carry", scheme: "reps", base: [16, 24] },
+    { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8] },
+
+    // --- Optional gear (off by default) --------------------------------
+    { id: "pullups", name: "Pull-ups", category: "pullup", equipment: "pullupBar", space: "small", pattern: "pull", scheme: "reps", base: [6, 10] },
+    { id: "t2b", name: "Toes-to-Bar", category: "pullup", equipment: "pullupBar", space: "small", pattern: "core", scheme: "reps", base: [6, 10] },
+    { id: "hanging_knee_raise", name: "Hanging Knee Raises", category: "pullup", equipment: "pullupBar", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
+    { id: "du", name: "Double-Unders", category: "jumprope", equipment: "jumpRope", space: "small", pattern: "cardio", scheme: "reps", base: [20, 35] },
+    { id: "su", name: "Single-Unders", category: "jumprope", equipment: "jumpRope", space: "small", pattern: "cardio", scheme: "reps", base: [30, 50] },
+    { id: "box_jump", name: "Box Jumps", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "box_step_up", name: "Box Step-ups (each side)", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "db_thruster", name: "Dumbbell Thrusters", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
+    { id: "db_snatch", name: "DB Single-Arm Snatch", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
+    { id: "bb_thruster", name: "Barbell Thrusters", category: "barbell", equipment: "barbell", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "bb_deadlift", name: "Barbell Deadlifts", category: "barbell", equipment: "barbell", space: "small", pattern: "hinge", scheme: "reps", base: [8, 14] },
+  ];
+
+  // ---------------------------------------------------------------------
+  // Formats
+  // ---------------------------------------------------------------------
+  // repMultiplier scales a movement's base range for that format;
+  // movementCount[intensity] is how many movements the format picks.
+
+  var FORMATS = {
+    amrap: {
+      id: "amrap",
+      name: "AMRAP",
+      description: "As Many Rounds/Reps As Possible",
+      repMultiplier: 1,
+      movementCount: { light: 2, moderate: 3, hard: 3 },
+    },
+    for_time: {
+      id: "for_time",
+      name: "For Time",
+      description: "Complete the rounds as fast as possible",
+      repMultiplier: 1,
+      movementCount: { light: 2, moderate: 3, hard: 4 },
+    },
+    emom: {
+      id: "emom",
+      name: "EMOM",
+      description: "Every Minute on the Minute",
+      repMultiplier: 0.5,
+      movementCount: { light: 1, moderate: 2, hard: 3 },
+    },
+    tabata: {
+      id: "tabata",
+      name: "Tabata",
+      description: "20s work / 10s rest x 8 rounds per movement",
+      repMultiplier: null, // max-effort intervals, no prescribed reps
+      movementCount: { light: 1, moderate: 2, hard: 3 },
+    },
+    chipper: {
+      id: "chipper",
+      name: "Chipper",
+      description: "One trip through the whole list, for time",
+      repMultiplier: 2.5,
+      movementCount: { light: 3, moderate: 5, hard: 7 },
+    },
+  };
+
+  var INTENSITY_MULTIPLIER = { light: 0.8, moderate: 1.0, hard: 1.25 };
+
+  var SPACE_RANK = { small: 0, medium: 1, large: 2 };
+
+  return {
+    DEFAULT_EQUIPMENT: DEFAULT_EQUIPMENT,
+    MOVEMENTS: MOVEMENTS,
+    FORMATS: FORMATS,
+    INTENSITY_MULTIPLIER: INTENSITY_MULTIPLIER,
+    SPACE_RANK: SPACE_RANK,
+  };
+});
