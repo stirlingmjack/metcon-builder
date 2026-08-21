@@ -209,6 +209,15 @@
 
   var SPACE_RANK = { small: 0, medium: 1, large: 2 };
 
+  // For Time / Chipper / Complex prescribe a fixed amount of *work*
+  // (movement count, rounds) rather than being bound by the clock the way
+  // AMRAP/EMOM/Interval naturally are. Their movementCount/roundsRange
+  // tables were tuned assuming roughly this many minutes; the generator
+  // scales that prescribed volume up or down against the selected
+  // Duration relative to this reference so a 40-min chipper actually is
+  // bigger than a 20-min one, not just a longer time cap on the same work.
+  var DURATION_REFERENCE_MINUTES = 20;
+
   return {
     DEFAULT_EQUIPMENT: DEFAULT_EQUIPMENT,
     MOVEMENTS: MOVEMENTS,
@@ -216,5 +225,6 @@
     FORMAT_WEIGHTS: FORMAT_WEIGHTS,
     INTENSITY_MULTIPLIER: INTENSITY_MULTIPLIER,
     SPACE_RANK: SPACE_RANK,
+    DURATION_REFERENCE_MINUTES: DURATION_REFERENCE_MINUTES,
   };
 });

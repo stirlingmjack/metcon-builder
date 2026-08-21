@@ -18,12 +18,24 @@
   var DEFAULT_EQUIPMENT = MetconData.DEFAULT_EQUIPMENT;
   var INTENSITY_MULTIPLIER = MetconData.INTENSITY_MULTIPLIER;
   var SPACE_RANK = MetconData.SPACE_RANK;
+  var DURATION_REFERENCE_MINUTES = MetconData.DURATION_REFERENCE_MINUTES;
   var createRng = MetconRng.createRng;
 
   // Equipment categories a "Complex" (continuous, one-implement circuit)
   // can reasonably be built from — bodyweight is deliberately excluded
   // here since it's mixed in separately, not the anchor implement.
   var COMPLEX_EQUIPMENT_CATEGORIES = ["kettlebell", "sandbag", "dumbbell", "barbell"];
+
+  // Scales a count (movement count, round count) tuned for
+  // DURATION_REFERENCE_MINUTES against the actually-selected duration, so
+  // a 40-min For Time/Chipper/Complex prescribes more work than a 20-min
+  // one instead of just getting a bigger, mostly-unused time cap.
+  function scaleForDuration(baseCount, duration, minCount, maxCount) {
+    var scaled = Math.round(baseCount * (duration / DURATION_REFERENCE_MINUTES));
+    scaled = Math.max(minCount || 1, scaled);
+    if (maxCount) scaled = Math.min(scaled, maxCount);
+    return scaled;
+  }
 
   // -----------------------------------------------------------------
   // Equipment / pool helpers
@@ -275,7 +287,9 @@
         return { timeCapMinutes: duration };
       case "for_time": {
         var range = FOR_TIME_ROUNDS_RANGE[intensity] || FOR_TIME_ROUNDS_RANGE.moderate;
-        return { rounds: rng.int(range[0], range[1]), timeCapMinutes: duration };
+        var ftLo = scaleForDuration(range[0], duration, 2, 20);
+        var ftHi = scaleForDuration(range[1], duration, ftLo, 24);
+        return { rounds: rng.int(ftLo, ftHi), timeCapMinutes: duration };
       }
       case "emom":
         return { totalMinutes: duration };
@@ -290,11 +304,13 @@
       case "chipper":
         return { timeCapMinutes: duration };
       case "complex": {
-        var cRange = format.roundsRange[intensity] || format.roundsRange.moderate;
-        var roundsMin = rng.int(cRange[0], cRange[1] - 1);
+        var cRangeRaw = format.roundsRange[intensity] || format.roundsRange.moderate;
+        var cLo = scaleForDuration(cRangeRaw[0], duration, 2, 26);
+        var cHi = scaleForDuration(cRangeRaw[1], duration, cLo, 30);
+        var roundsMin = rng.int(cLo, Math.max(cLo, cHi - 1));
         // ~50% of the time show a single fixed round count, otherwise a
         // small range (mirrors how these actually get written up).
-        var roundsMax = rng.chance(0.5) ? roundsMin : Math.min(cRange[1], roundsMin + rng.int(1, 3));
+        var roundsMax = rng.chance(0.5) ? roundsMin : Math.min(cHi, roundsMin + rng.int(1, 3));
         return { roundsMin: roundsMin, roundsMax: roundsMax, continuous: true };
       }
       default:
@@ -459,6 +475,16 @@
     }
 
     var wantedCount = format.movementCount[intensity] || format.movementCount.moderate;
+
+    // Chipper is "one trip through the list" — the way it gets longer is
+    // by having more movements on the list, not more reps of the same few.
+    // (For Time/Complex instead scale their round count — see
+    // buildFormatMeta — since repeating the same list more times is how
+    // those actually get built for a longer session.)
+    if (format.id === "chipper") {
+      wantedCount = scaleForDuration(wantedCount, duration, 2, 12);
+    }
+
     wantedCount = Math.min(wantedCount, workingPool.length);
 
     if (format.id === "tabata") {

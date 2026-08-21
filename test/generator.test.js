@@ -314,4 +314,79 @@ test("Push-up/burpee/air-squat chipper volume stays in the calibrated range", fu
   assert.ok(burpeeHardMax >= 80, "burpee hard-chipper max was " + burpeeHardMax + ", expected >= 80");
 });
 
+test("Chipper movement count scales up with duration", function () {
+  function chipperMovementCountAt(duration) {
+    var counts = [];
+    for (var i = 0; i < 60; i++) {
+      var w = generator.generateWorkout({
+        equipment: DEFAULT_EQUIPMENT,
+        duration: duration,
+        intensity: "moderate",
+        seed: "chipper-scale-" + duration + "-" + i,
+      });
+      if (w.formatId === "chipper") counts.push(w.movements.length);
+    }
+    return counts;
+  }
+  var short = chipperMovementCountAt(10);
+  var long = chipperMovementCountAt(60);
+  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 10-min and a 60-min chipper");
+  var avg = function (arr) {
+    return arr.reduce(function (a, b) {
+      return a + b;
+    }, 0) / arr.length;
+  };
+  assert.ok(avg(long) > avg(short), "a 60-min chipper should have more movements than a 10-min one");
+});
+
+test("For Time round count scales up with duration", function () {
+  function forTimeRoundsAt(duration) {
+    var rounds = [];
+    for (var i = 0; i < 60; i++) {
+      var w = generator.generateWorkout({
+        equipment: DEFAULT_EQUIPMENT,
+        duration: duration,
+        intensity: "moderate",
+        seed: "ft-scale-" + duration + "-" + i,
+      });
+      if (w.formatId === "for_time") rounds.push(w.meta.rounds);
+    }
+    return rounds;
+  }
+  var short = forTimeRoundsAt(10);
+  var long = forTimeRoundsAt(60);
+  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 10-min and a 60-min for_time");
+  var avg = function (arr) {
+    return arr.reduce(function (a, b) {
+      return a + b;
+    }, 0) / arr.length;
+  };
+  assert.ok(avg(long) > avg(short) * 2, "a 60-min for_time should have meaningfully more rounds than a 10-min one");
+});
+
+test("Complex round count scales up with duration", function () {
+  function complexRoundsAt(duration) {
+    var rounds = [];
+    for (var i = 0; i < 60; i++) {
+      var w = generator.generateWorkout({
+        equipment: DEFAULT_EQUIPMENT,
+        duration: duration,
+        intensity: "moderate",
+        seed: "complex-scale-" + duration + "-" + i,
+      });
+      if (w.formatId === "complex") rounds.push(w.meta.roundsMax);
+    }
+    return rounds;
+  }
+  var short = complexRoundsAt(10);
+  var long = complexRoundsAt(60);
+  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 10-min and a 60-min complex");
+  var avg = function (arr) {
+    return arr.reduce(function (a, b) {
+      return a + b;
+    }, 0) / arr.length;
+  };
+  assert.ok(avg(long) > avg(short), "a 60-min complex should prescribe more rounds than a 10-min one");
+});
+
 console.log(passed + " tests passed");
