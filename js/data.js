@@ -65,7 +65,7 @@
     // tend to burn through 20-40+ cal a round, not a token 10-16.
     { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
     { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
-    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [8, 15], scaleNote: "Scale to step-back burpees (no push-up) if needed." },
+    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 24], scaleNote: "Scale to step-back burpees (no push-up) if needed." },
     { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12] },
     { id: "mountain_climbers", name: "Mountain Climbers", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [20, 30] },
     { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30] },
@@ -74,7 +74,7 @@
     { id: "star_jumps", name: "Star Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 20] },
 
     // --- Bodyweight strength / gymnastic --------------------------------
-    { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [10, 18], scaleNote: "Scale to knee push-ups if needed." },
+    { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [8, 13], scaleNote: "Scale to knee push-ups if needed." },
     { id: "air_squats", name: "Air Squats", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [15, 25] },
     { id: "squat_jumps", name: "Squat Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [10, 18] },
     { id: "walking_lunges", name: "Walking Lunges (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "squat", scheme: "reps", base: [16, 24] },

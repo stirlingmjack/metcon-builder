@@ -292,4 +292,26 @@ test("Interval format produces 3 rounds with a 6-7 min on-time and 2 min rest", 
   assert.ok(found, "expected to encounter an interval workout within 400 seeds");
 });
 
+test("Push-up/burpee/air-squat chipper volume stays in the calibrated range", function () {
+  var byId = {};
+  MetconData.MOVEMENTS.forEach(function (m) {
+    byId[m.id] = m;
+  });
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("bw-calibration");
+  var chipper = MetconData.FORMATS.chipper;
+
+  var pushupHardMax = 0;
+  var burpeeHardMax = 0;
+  for (var i = 0; i < 500; i++) {
+    var pu = generator.scaleAmount(byId.pushups, chipper, "hard", rng);
+    var bp = generator.scaleAmount(byId.burpees, chipper, "hard", rng);
+    pushupHardMax = Math.max(pushupHardMax, pu);
+    burpeeHardMax = Math.max(burpeeHardMax, bp);
+  }
+  // Push-ups fatigue fast — a hard chipper leg should stay well under 70.
+  assert.ok(pushupHardMax <= 55, "push-up hard-chipper max was " + pushupHardMax + ", expected <= 55");
+  // Burpees should be able to reach the ~90 mark from the reference sample.
+  assert.ok(burpeeHardMax >= 80, "burpee hard-chipper max was " + burpeeHardMax + ", expected >= 80");
+});
+
 console.log(passed + " tests passed");
