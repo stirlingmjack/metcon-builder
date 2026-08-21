@@ -8,6 +8,8 @@
 
   var SETTINGS_KEY = "metcon.settings.v1";
   var HISTORY_KEY = "metcon.history.v1";
+  var STRENGTH_SETTINGS_KEY = "metcon.strengthSettings.v1";
+  var STRENGTH_HISTORY_KEY = "metcon.strengthHistory.v1";
 
   function safeParse(json, fallback) {
     if (!json) return fallback;
@@ -54,26 +56,51 @@
   }
 
   // ---- history ----------------------------------------------------------
-  // History is a map of "YYYY-MM-DD" -> { workout, completed, rx, notes, savedAt }
+  // History is a map of "YYYY-MM-DD" -> { workout, completed, rx, notes, savedAt }.
+  // Generalized over a storage key so the same shape can back both the
+  // Metcon history and the Strength history (separate localStorage keys,
+  // separate date-keyed maps).
 
-  function loadHistory() {
-    return safeParse(localStorage.getItem(HISTORY_KEY), {});
+  function loadHistoryFrom(key) {
+    return safeParse(localStorage.getItem(key), {});
   }
 
-  function saveHistory(history) {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  function saveHistoryTo(key, history) {
+    localStorage.setItem(key, JSON.stringify(history));
   }
 
-  function saveHistoryEntry(dateKey, entry) {
-    var history = loadHistory();
+  function saveHistoryEntryTo(key, dateKey, entry) {
+    var history = loadHistoryFrom(key);
     history[dateKey] = Object.assign({}, history[dateKey], entry, { savedAt: new Date().toISOString() });
-    saveHistory(history);
+    saveHistoryTo(key, history);
     return history[dateKey];
   }
 
-  function getEntry(dateKey) {
-    var history = loadHistory();
+  function getEntryFrom(key, dateKey) {
+    var history = loadHistoryFrom(key);
     return history[dateKey] || null;
+  }
+
+  function getAllHistorySortedFrom(key) {
+    var history = loadHistoryFrom(key);
+    return Object.keys(history)
+      .sort()
+      .reverse()
+      .map(function (k) {
+        return { date: k, entry: history[k] };
+      });
+  }
+
+  function loadHistory() {
+    return loadHistoryFrom(HISTORY_KEY);
+  }
+
+  function saveHistoryEntry(dateKey, entry) {
+    return saveHistoryEntryTo(HISTORY_KEY, dateKey, entry);
+  }
+
+  function getEntry(dateKey) {
+    return getEntryFrom(HISTORY_KEY, dateKey);
   }
 
   // Returns { dates: [...sorted desc], entries: {...} } for the most recent N days,
@@ -114,13 +141,37 @@
   }
 
   function getAllHistorySorted() {
-    var history = loadHistory();
-    return Object.keys(history)
-      .sort()
-      .reverse()
-      .map(function (k) {
-        return { date: k, entry: history[k] };
-      });
+    return getAllHistorySortedFrom(HISTORY_KEY);
+  }
+
+  // ---- strength settings (currently just "which day was last picked") --
+
+  function loadStrengthSettings() {
+    var defaults = { dayId: null };
+    var stored = safeParse(localStorage.getItem(STRENGTH_SETTINGS_KEY), null);
+    if (!stored) return defaults;
+    return { dayId: stored.dayId || defaults.dayId };
+  }
+
+  function saveStrengthSettings(settings) {
+    localStorage.setItem(STRENGTH_SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  // ---- strength history --------------------------------------------------
+  // Same date-keyed shape as the Metcon history, but a separate store:
+  // { dayId, finisherWorkout, sets: { blockCode: [{weight, reps}, ...] },
+  //   completed, notes, savedAt }
+
+  function saveStrengthEntry(dateKey, entry) {
+    return saveHistoryEntryTo(STRENGTH_HISTORY_KEY, dateKey, entry);
+  }
+
+  function getStrengthEntry(dateKey) {
+    return getEntryFrom(STRENGTH_HISTORY_KEY, dateKey);
+  }
+
+  function getAllStrengthHistorySorted() {
+    return getAllHistorySortedFrom(STRENGTH_HISTORY_KEY);
   }
 
   root.MetconStorage = {
@@ -134,5 +185,10 @@
     getRecentMovementIds: getRecentMovementIds,
     getLastFormatId: getLastFormatId,
     getAllHistorySorted: getAllHistorySorted,
+    loadStrengthSettings: loadStrengthSettings,
+    saveStrengthSettings: saveStrengthSettings,
+    saveStrengthEntry: saveStrengthEntry,
+    getStrengthEntry: getStrengthEntry,
+    getAllStrengthHistorySorted: getAllStrengthHistorySorted,
   };
 })(typeof window !== "undefined" ? window : this);

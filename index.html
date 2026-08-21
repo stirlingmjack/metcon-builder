@@ -19,6 +19,15 @@
       </button>
     </header>
 
+    <nav class="tab-bar" role="tablist">
+      <button class="tab-btn" id="tab-btn-metcon" type="button" role="tab" aria-selected="true" aria-controls="metcon-tab-panel">
+        Metcon
+      </button>
+      <button class="tab-btn" id="tab-btn-strength" type="button" role="tab" aria-selected="false" aria-controls="strength-tab-panel">
+        Strength
+      </button>
+    </nav>
+
     <section id="settings-panel" class="panel settings-panel hidden">
       <h2>Equipment &amp; Space</h2>
       <form id="settings-form">
@@ -84,6 +93,7 @@
       </form>
     </section>
 
+    <div id="metcon-tab-panel">
     <section class="panel controls-panel">
       <div class="control-row">
         <label class="field-row">
@@ -161,12 +171,48 @@
       <h2>History</h2>
       <div id="history-list" class="history-list"></div>
     </section>
+    </div>
+
+    <div id="strength-tab-panel" class="hidden">
+      <section class="panel controls-panel">
+        <div class="control-row">
+          <label class="field-row">
+            Day
+            <select id="strength-day-select"></select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div id="strength-blocks"></div>
+      </section>
+
+      <section class="panel log-panel">
+        <h2>Log today's session</h2>
+        <div class="log-row">
+          <label class="checkbox-row"><input type="checkbox" id="strength-log-completed" /> Completed</label>
+        </div>
+        <label class="field-row">
+          Notes
+          <textarea id="strength-log-notes" rows="3" placeholder="How it felt, weight adjustments…"></textarea>
+        </label>
+        <button id="strength-log-save-btn" class="btn btn-secondary" type="button">Save session</button>
+        <span id="strength-log-saved-msg" class="saved-msg hidden">Saved.</span>
+      </section>
+
+      <section class="panel history-panel">
+        <h2>History</h2>
+        <div id="strength-history-list" class="history-list"></div>
+      </section>
+    </div>
   </div>
 
   <script src="js/data.js"></script>
   <script src="js/rng.js"></script>
   <script src="js/generator.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/strength-data.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/strength.js"></script>
 </body>
 </html>

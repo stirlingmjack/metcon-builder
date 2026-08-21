@@ -418,6 +418,35 @@
   // Init
   // ---------------------------------------------------------------------
 
+  // Simple two-tab show/hide — content in both tabs renders on page load
+  // regardless of which is visible (see strength.js), so switching is
+  // just a visibility/aria toggle, nothing to (re)generate on click.
+  function initTabs() {
+    var tabMetcon = document.getElementById("tab-btn-metcon");
+    var tabStrength = document.getElementById("tab-btn-strength");
+    var panelMetcon = document.getElementById("metcon-tab-panel");
+    var panelStrength = document.getElementById("strength-tab-panel");
+    if (!tabMetcon || !tabStrength || !panelMetcon || !panelStrength) return;
+
+    function activate(tab) {
+      var metconActive = tab === "metcon";
+      tabMetcon.classList.toggle("active", metconActive);
+      tabStrength.classList.toggle("active", !metconActive);
+      tabMetcon.setAttribute("aria-selected", String(metconActive));
+      tabStrength.setAttribute("aria-selected", String(!metconActive));
+      panelMetcon.classList.toggle("hidden", !metconActive);
+      panelStrength.classList.toggle("hidden", metconActive);
+    }
+
+    tabMetcon.addEventListener("click", function () {
+      activate("metcon");
+    });
+    tabStrength.addEventListener("click", function () {
+      activate("strength");
+    });
+    activate("metcon");
+  }
+
   function init() {
     els.todayLabel.textContent = formatTodayLabel();
 
@@ -430,6 +459,8 @@
       els.settingsToggle.setAttribute("aria-expanded", String(isHidden));
     });
 
+    initTabs();
+
     els.settingsForm.addEventListener("submit", function (e) {
       e.preventDefault();
       var newSettings = readSettingsFromForm();
@@ -439,6 +470,9 @@
         els.settingsSavedMsg.classList.add("hidden");
       }, 2000);
       generateAndSave({ deterministic: false });
+      // Equipment is shared with the Strength tab's finisher block — let
+      // it know to refresh too, same as this tab just did.
+      document.dispatchEvent(new CustomEvent("metcon:settings-saved"));
     });
 
     els.ctrlDuration.addEventListener("change", updateTypeOptionsAvailability);
