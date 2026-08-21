@@ -15,6 +15,7 @@
   var MOVEMENTS = MetconData.MOVEMENTS;
   var FORMATS = MetconData.FORMATS;
   var FORMAT_WEIGHTS = MetconData.FORMAT_WEIGHTS;
+  var FORMAT_DURATION_LIMITS = MetconData.FORMAT_DURATION_LIMITS;
   var DEFAULT_EQUIPMENT = MetconData.DEFAULT_EQUIPMENT;
   var INTENSITY_MULTIPLIER = MetconData.INTENSITY_MULTIPLIER;
   var SPACE_RANK = MetconData.SPACE_RANK;
@@ -224,14 +225,35 @@
   // Format + movement selection
   // -----------------------------------------------------------------
 
+  // True if a format makes sense at the given duration (see
+  // FORMAT_DURATION_LIMITS) — a Chipper needs enough time for its volume,
+  // a short AMRAP/For Time stops making sense past a point, etc. A format
+  // with no entry is fine at any duration. Passing a null/undefined
+  // duration skips this filter entirely (used by callers/tests that just
+  // want the raw weighted pick).
+  function isFormatEligibleForDuration(formatId, duration) {
+    if (duration == null) return true;
+    var limits = FORMAT_DURATION_LIMITS && FORMAT_DURATION_LIMITS[formatId];
+    if (!limits) return true;
+    if (limits.min != null && duration < limits.min) return false;
+    if (limits.max != null && duration > limits.max) return false;
+    return true;
+  }
+
   // Weighted pick (see FORMAT_WEIGHTS) that excludes yesterday's format
-  // when possible, so the same shape doesn't show up two days running.
-  function selectFormat(rng, lastFormatId) {
+  // when possible, so the same shape doesn't show up two days running,
+  // and only considers formats that make sense at the given duration.
+  function selectFormat(rng, lastFormatId, duration) {
     var ids = Object.keys(FORMATS);
-    var candidates = ids.filter(function (id) {
+    var eligible = ids.filter(function (id) {
+      return isFormatEligibleForDuration(id, duration);
+    });
+    if (eligible.length === 0) eligible = ids; // safety net — shouldn't happen
+
+    var candidates = eligible.filter(function (id) {
       return id !== lastFormatId;
     });
-    if (candidates.length === 0) candidates = ids;
+    if (candidates.length === 0) candidates = eligible;
 
     var pool = [];
     candidates.forEach(function (id) {
@@ -496,6 +518,10 @@
     var seed = options.seed;
     var recentIds = options.recentMovementIds || [];
     var lastFormatId = options.lastFormatId || null;
+    // An explicit user pick from the "Type" control — bypasses random
+    // selection (and its duration-eligibility filter) entirely, since a
+    // deliberate choice overrides the "does this make sense" heuristic.
+    var forcedFormatId = options.forcedFormatId || null;
 
     var rng = createRng(seed);
     var pool = getAvailablePool(equipment);
@@ -503,7 +529,7 @@
       throw new Error("No movements available for the current equipment/space settings.");
     }
 
-    var format = selectFormat(rng, lastFormatId);
+    var format = forcedFormatId && FORMATS[forcedFormatId] ? FORMATS[forcedFormatId] : selectFormat(rng, lastFormatId, duration);
 
     // Complexes flow with one implement, so narrow the pool to a single
     // equipment category (± one bodyweight movement) before picking. The
@@ -605,5 +631,6 @@
     describeWorkout: describeWorkout,
     buildComplexPool: buildComplexPool,
     pickComplexEquipmentCategory: pickComplexEquipmentCategory,
+    isFormatEligibleForDuration: isFormatEligibleForDuration,
   };
 });

@@ -112,8 +112,21 @@
             <option value="hard">Hard</option>
           </select>
         </label>
+        <label class="field-row">
+          Type
+          <select id="ctrl-type">
+            <option value="">Any</option>
+            <option value="amrap">AMRAP</option>
+            <option value="for_time">For Time</option>
+            <option value="emom">EMOM</option>
+            <option value="chipper">Chipper</option>
+            <option value="complex">Complex</option>
+            <option value="interval">Interval</option>
+          </select>
+        </label>
         <button id="generate-btn" class="btn btn-primary" type="button">🎲 Generate / Regenerate</button>
       </div>
+      <p class="type-hint">Chipper needs 26+ min · AMRAP/For Time cap out at 20 min · everything else works at any length. Options that don't fit the current duration are greyed out.</p>
     </section>
 
     <section class="panel workout-panel">

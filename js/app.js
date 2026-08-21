@@ -31,6 +31,7 @@
 
     ctrlDuration: document.getElementById("ctrl-duration"),
     ctrlIntensity: document.getElementById("ctrl-intensity"),
+    ctrlType: document.getElementById("ctrl-type"),
     generateBtn: document.getElementById("generate-btn"),
 
     workoutCard: document.getElementById("workout-card"),
@@ -82,6 +83,28 @@
 
     els.ctrlDuration.value = String(settings.duration);
     els.ctrlIntensity.value = settings.intensity;
+
+    updateTypeOptionsAvailability();
+    var storedType = settings.type || "";
+    var storedOption = els.ctrlType.querySelector('option[value="' + storedType + '"]');
+    els.ctrlType.value = storedOption && !storedOption.disabled ? storedType : "";
+  }
+
+  // Greys out (disables) Type options that don't fit the current Duration
+  // (see FORMAT_DURATION_LIMITS in data.js) — e.g. Chipper is unselectable
+  // under 26 min. Falls back the selection to "Any" if the option the user
+  // had picked just became invalid.
+  function updateTypeOptionsAvailability() {
+    var duration = parseInt(els.ctrlDuration.value, 10) || 20;
+    var previousValue = els.ctrlType.value;
+    Array.prototype.forEach.call(els.ctrlType.options, function (opt) {
+      if (!opt.value) return; // "Any" is always selectable
+      opt.disabled = !MetconGenerator.isFormatEligibleForDuration(opt.value, duration);
+    });
+    var currentOption = els.ctrlType.querySelector('option[value="' + previousValue + '"]');
+    if (currentOption && currentOption.disabled) {
+      els.ctrlType.value = "";
+    }
   }
 
   function readSettingsFromForm() {
@@ -112,6 +135,7 @@
     return {
       duration: parseInt(els.ctrlDuration.value, 10) || 20,
       intensity: els.ctrlIntensity.value,
+      type: els.ctrlType.value, // "" = Any
     };
   }
 
@@ -132,6 +156,7 @@
         seed: seed,
         recentMovementIds: recentIds,
         lastFormatId: lastFormatId,
+        forcedFormatId: controls.type || null,
       });
     } catch (e) {
       renderError(e.message);
@@ -416,11 +441,15 @@
       generateAndSave({ deterministic: false });
     });
 
+    els.ctrlDuration.addEventListener("change", updateTypeOptionsAvailability);
+
     els.generateBtn.addEventListener("click", function () {
-      // Persist current duration/intensity as the new defaults for next visit.
+      // Persist current duration/intensity/type as the new defaults for next visit.
       var settings2 = MetconStorage.loadSettings();
-      settings2.duration = currentControls().duration;
-      settings2.intensity = currentControls().intensity;
+      var controls = currentControls();
+      settings2.duration = controls.duration;
+      settings2.intensity = controls.intensity;
+      settings2.type = controls.type;
       MetconStorage.saveSettings(settings2);
       generateAndSave({ deterministic: false });
     });

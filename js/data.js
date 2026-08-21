@@ -219,11 +219,26 @@
   // bigger than a 20-min one, not just a longer time cap on the same work.
   var DURATION_REFERENCE_MINUTES = 20;
 
+  // Which durations a format actually makes sense at — a Chipper needs
+  // enough time to hold several movements' worth of volume, while a short
+  // AMRAP/For Time stops making sense once the session is long enough
+  // that you'd want more variety than one continuous push. Applies both
+  // to random ("Any") format selection and to which choices the manual
+  // Type picker offers. Formats with no entry here (EMOM, Complex,
+  // Interval) are considered fine at any duration.
+  var FORMAT_DURATION_LIMITS = {
+    chipper: { min: 26 },
+    amrap: { max: 20 },
+    for_time: { max: 20 },
+    emom: { max: 32 },
+  };
+
   return {
     DEFAULT_EQUIPMENT: DEFAULT_EQUIPMENT,
     MOVEMENTS: MOVEMENTS,
     FORMATS: FORMATS,
     FORMAT_WEIGHTS: FORMAT_WEIGHTS,
+    FORMAT_DURATION_LIMITS: FORMAT_DURATION_LIMITS,
     INTENSITY_MULTIPLIER: INTENSITY_MULTIPLIER,
     SPACE_RANK: SPACE_RANK,
     DURATION_REFERENCE_MINUTES: DURATION_REFERENCE_MINUTES,

@@ -35,6 +35,8 @@
       equipment: JSON.parse(JSON.stringify(root.MetconData.DEFAULT_EQUIPMENT)),
       duration: 20,
       intensity: "moderate",
+      // "" = Any (random, weighted); otherwise a forced format id (e.g. "chipper").
+      type: "",
     };
     var stored = safeParse(localStorage.getItem(SETTINGS_KEY), null);
     if (!stored) return defaults;
@@ -43,6 +45,7 @@
       equipment: Object.assign({}, defaults.equipment, stored.equipment || {}),
       duration: stored.duration || defaults.duration,
       intensity: stored.intensity || defaults.intensity,
+      type: stored.type || defaults.type,
     };
   }
 

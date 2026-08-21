@@ -328,9 +328,11 @@ test("Chipper movement count scales up with duration", function () {
     }
     return counts;
   }
-  var short = chipperMovementCountAt(10);
-  var long = chipperMovementCountAt(60);
-  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 10-min and a 60-min chipper");
+  // Chipper is only eligible at 26+ min (FORMAT_DURATION_LIMITS), so both
+  // samples need to stay within that window.
+  var short = chipperMovementCountAt(26);
+  var long = chipperMovementCountAt(32);
+  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 26-min and a 32-min chipper");
   var avg = function (arr) {
     return arr.reduce(function (a, b) {
       return a + b;
@@ -353,9 +355,11 @@ test("For Time round count scales up with duration", function () {
     }
     return rounds;
   }
-  var short = forTimeRoundsAt(10);
-  var long = forTimeRoundsAt(60);
-  assert.ok(short.length > 0 && long.length > 0, "expected to sample both a 10-min and a 60-min for_time");
+  // For Time is only eligible up to 20 min (FORMAT_DURATION_LIMITS), so
+  // both samples need to stay within that window.
+  var short = forTimeRoundsAt(8);
+  var long = forTimeRoundsAt(20);
+  assert.ok(short.length > 0 && long.length > 0, "expected to sample both an 8-min and a 20-min for_time");
   var avg = function (arr) {
     return arr.reduce(function (a, b) {
       return a + b;
@@ -472,6 +476,60 @@ test("Complex sharedLoad respects a per-movement maxWeightKg even when that move
         assert.strictEqual(w.sharedLoad.value, "50 kg", "a sandbag complex including cleans must share the 50kg load");
       }
     }
+  }
+});
+
+test("Random ('Any') selection never picks Chipper below 26 min or AMRAP/For Time above 20 min", function () {
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("eligibility-check");
+  for (var i = 0; i < 500; i++) {
+    var f = generator.selectFormat(rng, null, 10);
+    assert.notStrictEqual(f.id, "chipper", "chipper should never be selected at 10 min");
+  }
+  for (var i = 0; i < 500; i++) {
+    var f2 = generator.selectFormat(rng, null, 32);
+    assert.notStrictEqual(f2.id, "amrap", "amrap should never be selected at 32 min");
+    assert.notStrictEqual(f2.id, "for_time", "for_time should never be selected at 32 min");
+  }
+  for (var i = 0; i < 500; i++) {
+    var f3 = generator.selectFormat(rng, null, 30);
+    assert.notStrictEqual(f3.id, "amrap", "amrap should never be selected at 30 min");
+  }
+});
+
+test("EMOM remains eligible across the whole 8-32 min range", function () {
+  [8, 20, 32].forEach(function (duration) {
+    assert.ok(generator.isFormatEligibleForDuration("emom", duration), "emom should be eligible at " + duration + " min");
+  });
+});
+
+test("isFormatEligibleForDuration skips filtering when duration is omitted", function () {
+  assert.strictEqual(generator.isFormatEligibleForDuration("chipper", null), true);
+  assert.strictEqual(generator.isFormatEligibleForDuration("chipper", undefined), true);
+});
+
+test("forcedFormatId overrides random selection, ignoring the duration-eligibility filter", function () {
+  // Chipper is normally ineligible at 10 min, but an explicit user choice
+  // should still be honored.
+  var w = generator.generateWorkout({
+    equipment: DEFAULT_EQUIPMENT,
+    duration: 10,
+    intensity: "moderate",
+    seed: "forced-chipper",
+    forcedFormatId: "chipper",
+  });
+  assert.strictEqual(w.formatId, "chipper");
+});
+
+test("forcedFormatId is deterministic and repeats the same format across seeds", function () {
+  for (var i = 0; i < 20; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "moderate",
+      seed: "forced-emom-" + i,
+      forcedFormatId: "emom",
+    });
+    assert.strictEqual(w.formatId, "emom");
   }
 });
 

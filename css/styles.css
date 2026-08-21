@@ -104,6 +104,13 @@ h2 {
   gap: 12px;
 }
 
+.type-hint {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .field-row {
   display: flex;
   flex-direction: column;
