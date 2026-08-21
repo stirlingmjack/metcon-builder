@@ -102,8 +102,8 @@
     { id: "kb_reverse_lunge", name: "KB Reverse Lunges (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
     { id: "kb_row", name: "KB Row (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "pull", scheme: "reps", base: [10, 16] },
     { id: "kb_tgu", name: "KB Turkish Get-ups (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "full", scheme: "reps", base: [3, 6] },
-    { id: "kb_front_rack_carry", name: "KB Front Rack Carry (steps)", category: "kettlebell", equipment: "kettlebells", requiresPair: true, space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
-    { id: "kb_suitcase_carry", name: "KB Suitcase Carry (steps)", category: "kettlebell", equipment: "kettlebells", space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
+    { id: "kb_front_rack_carry", name: "KB Front Rack Carry", category: "kettlebell", equipment: "kettlebells", requiresPair: true, space: "medium", pattern: "carry", scheme: "meters", base: [20, 35] },
+    { id: "kb_suitcase_carry", name: "KB Suitcase Carry", category: "kettlebell", equipment: "kettlebells", space: "medium", pattern: "carry", scheme: "meters", base: [20, 35] },
     { id: "kb_halo", name: "KB Halos", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
 
     // --- Sandbag -----------------------------------------------------
@@ -111,7 +111,7 @@
     { id: "sb_lunge", name: "Sandbag Alternating Lunges", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "squat", scheme: "reps", base: [14, 20] },
     { id: "sb_clean", name: "Sandbag Cleans", category: "sandbag", equipment: "sandbags", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
     { id: "sb_over_shoulder", name: "Sandbag Over-the-Shoulder", category: "sandbag", equipment: "sandbags", space: "small", pattern: "carry", scheme: "reps", base: [8, 14] },
-    { id: "sb_bear_hug_carry", name: "Sandbag Bear Hug Carry (steps)", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "carry", scheme: "reps", base: [16, 24] },
+    { id: "sb_bear_hug_carry", name: "Sandbag Bear Hug Carry", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "carry", scheme: "meters", base: [15, 30] },
     { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8] },
 
     // --- Optional gear (off by default) --------------------------------
@@ -163,6 +163,16 @@
       repMultiplier: null, // max-effort intervals, no prescribed reps
       movementCount: { light: 1, moderate: 2, hard: 3 },
     },
+    interval: {
+      id: "interval",
+      name: "Interval",
+      description: "3 rounds: work the block, rest between rounds",
+      repMultiplier: 1,
+      movementCount: { light: 2, moderate: 3, hard: 3 },
+      rounds: 3,
+      onMinutesOptions: [6, 7],
+      restMinutes: 2,
+    },
     chipper: {
       id: "chipper",
       name: "Chipper",
@@ -182,14 +192,15 @@
   };
 
   // Relative odds each format gets picked (before excluding yesterday's
-  // format). Weighted toward for_time/complex/chipper and away from
-  // emom/tabata to match a "continuous flow + erg-anchored metcon" taste
-  // rather than interval-style training.
+  // format). Weighted toward for_time/complex/chipper; tabata is at 0
+  // (classic short-burst Tabata isn't a fit) in favor of the longer
+  // interval format (3 rounds of 6-7 min on / 2 min off).
   var FORMAT_WEIGHTS = {
     amrap: 2,
     for_time: 3,
     emom: 1,
-    tabata: 1,
+    tabata: 0,
+    interval: 2,
     chipper: 2,
     complex: 3,
   };

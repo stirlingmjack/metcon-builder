@@ -29,16 +29,20 @@ but opening the file directly also works in most browsers.)
   until you hit Generate/Regenerate.
 - **`js/generator.js`** — the pure generation logic: filters the movement
   library down to what your equipment/space allow, picks a format (AMRAP,
-  For Time, EMOM, Tabata, Chipper, or Complex — a continuous one-implement
-  circuit, sometimes generated as a "same weight, one side then the other"
-  variant), picks 1–4 movements with a soft preference for pattern variety
-  and for movements you haven't done the last few days, and scales
-  reps/weights to your chosen duration and intensity — including trimming
-  the rep target down when a heavier weight gets picked (`weightDampening`
-  in `js/generator.js`). Format selection is weighted (`FORMAT_WEIGHTS` in
-  `js/data.js`) toward For Time/Complex/Chipper and away from EMOM/Tabata;
-  adjust those weights to retune the mix. Has no DOM dependency, so it's
-  unit-tested directly in Node — see `test/generator.test.js`
+  For Time, EMOM, Chipper, Complex — a continuous one-implement circuit,
+  sometimes generated as a "same weight, one side then the other" variant
+  — or Interval — 3 rounds of a 6-7 min AMRAP block with 2 min rest between;
+  classic Tabata is defined but weighted to 0 by default), picks 1–4
+  movements with a soft preference for pattern variety and for movements
+  you haven't done the last few days, and scales reps/weights to your
+  chosen duration and intensity. Reps and calories always round to an even
+  number, distance-based movements (carries) round to a clean multiple of
+  5 meters, and a heavier picked weight trims the rep target down instead
+  of prescribing unrealistic high-rep sets (`weightDampening`). Format
+  selection is weighted (`FORMAT_WEIGHTS` in `js/data.js`) toward For Time/
+  Complex/Chipper; adjust those weights (or `niceRound`'s rounding step,
+  or a movement's `base` range) to retune the mix. Has no DOM dependency,
+  so it's unit-tested directly in Node — see `test/generator.test.js`
   (`node test/generator.test.js`).
 - **`js/storage.js`** — reads/writes settings and a date-keyed workout
   history to `localStorage`.

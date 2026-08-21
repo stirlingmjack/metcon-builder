@@ -90,7 +90,7 @@ test("generateWorkout produces a well-formed workout for default equipment", fun
   assert.ok(typeof w.text === "string" && w.text.length > 0);
   w.movements.forEach(function (m) {
     assert.ok(m.name);
-    assert.ok(["reps", "cals", "sec"].indexOf(m.scheme) !== -1);
+    assert.ok(["reps", "cals", "sec", "meters"].indexOf(m.scheme) !== -1);
   });
 });
 
@@ -165,25 +165,20 @@ test("generateWorkout scales EMOM movement count down for short durations", func
 });
 
 test("Tabata format has no prescribed amount (max-effort intervals)", function () {
-  // Force a tabata-only pool scenario by directly invoking scaleAmount via
-  // generateWorkout with many retries until we hit tabata (formats are
-  // chosen randomly), to confirm amount is null when it does occur.
-  var found = false;
-  for (var i = 0; i < 100 && !found; i++) {
-    var w = generator.generateWorkout({
-      equipment: DEFAULT_EQUIPMENT,
-      duration: 20,
-      intensity: "moderate",
-      seed: "tabata-search-" + i,
-    });
-    if (w.formatId === "tabata") {
-      found = true;
-      w.movements.forEach(function (m) {
-        assert.strictEqual(m.amount, null);
-      });
-    }
+  // Tabata is weighted to 0 (see FORMAT_WEIGHTS) so it no longer comes up
+  // through normal random selection — test scaleAmount directly instead.
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("tabata-direct");
+  var movement = { base: [10, 20], scheme: "reps" };
+  var amount = generator.scaleAmount(movement, MetconData.FORMATS.tabata, "moderate", rng);
+  assert.strictEqual(amount, null);
+});
+
+test("Tabata is weighted to 0 and is never selected", function () {
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("tabata-never");
+  for (var i = 0; i < 500; i++) {
+    var f = generator.selectFormat(rng, null);
+    assert.notStrictEqual(f.id, "tabata");
   }
-  assert.ok(found, "expected to encounter a tabata workout within 100 random seeds");
 });
 
 test("Complex format shares one load across every loaded movement", function () {
@@ -246,7 +241,55 @@ test("selectFormat respects FORMAT_WEIGHTS direction (complex/for_time favored o
     counts[f.id] = (counts[f.id] || 0) + 1;
   }
   assert.ok(counts.for_time > counts.emom, "for_time should be picked more often than emom");
-  assert.ok(counts.complex > counts.tabata, "complex should be picked more often than tabata");
+  assert.ok(counts.complex > (counts.tabata || 0), "complex should be picked more often than tabata");
+  assert.strictEqual(counts.tabata, undefined, "tabata is weighted to 0 and should never appear");
+});
+
+test("Reps and cals are always rounded to an even number", function () {
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("even-check");
+  for (var i = 0; i < 500; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: ["light", "moderate", "hard"][i % 3],
+      seed: "even-" + i,
+    });
+    w.movements.forEach(function (m) {
+      if (m.amount != null && (m.scheme === "reps" || m.scheme === "cals")) {
+        assert.strictEqual(m.amount % 2, 0, m.name + " amount " + m.amount + " should be even");
+      }
+    });
+  }
+});
+
+test("Carry movements use meters instead of steps", function () {
+  var carryIds = ["kb_front_rack_carry", "kb_suitcase_carry", "sb_bear_hug_carry"];
+  carryIds.forEach(function (id) {
+    var m = MetconData.MOVEMENTS.filter(function (x) {
+      return x.id === id;
+    })[0];
+    assert.strictEqual(m.scheme, "meters");
+    assert.ok(m.name.indexOf("(steps)") === -1, m.name + " should not still say (steps)");
+  });
+});
+
+test("Interval format produces 3 rounds with a 6-7 min on-time and 2 min rest", function () {
+  var found = false;
+  for (var i = 0; i < 400 && !found; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "moderate",
+      seed: "interval-" + i,
+    });
+    if (w.formatId === "interval") {
+      found = true;
+      assert.strictEqual(w.meta.rounds, 3);
+      assert.ok([6, 7].indexOf(w.meta.onMinutes) !== -1);
+      assert.strictEqual(w.meta.restMinutes, 2);
+    }
+  }
+  assert.ok(found, "expected to encounter an interval workout within 400 seeds");
 });
 
 console.log(passed + " tests passed");

@@ -126,12 +126,22 @@
     return 1 - 0.35 * pct;
   }
 
+  function roundToNearest(val, step) {
+    return Math.max(step, Math.round(val / step) * step);
+  }
+
   function niceRound(val, scheme) {
     if (scheme === "sec") {
-      return Math.max(10, Math.round(val / 5) * 5);
+      return roundToNearest(val, 5);
     }
-    if (val > 20) return Math.round(val / 5) * 5;
-    return Math.round(val);
+    if (scheme === "meters") {
+      // Rounds to a clean multiple of 5m — matches how most driveways/
+      // yards get paced out for carries.
+      return roundToNearest(val, 5);
+    }
+    // reps & cals: always an even number, and a clean multiple of 10 once
+    // we're into chipper-sized totals.
+    return roundToNearest(val, val > 40 ? 10 : 2);
   }
 
   // Scales a movement's baseline range for the given format + intensity
@@ -163,7 +173,10 @@
 
     var pool = [];
     candidates.forEach(function (id) {
-      var weight = (FORMAT_WEIGHTS && FORMAT_WEIGHTS[id]) || 1;
+      // An explicit weight of 0 (e.g. tabata) must stay 0 — only a truly
+      // missing entry falls back to 1, so `|| 1` here would be a bug.
+      var hasWeight = FORMAT_WEIGHTS && Object.prototype.hasOwnProperty.call(FORMAT_WEIGHTS, id);
+      var weight = hasWeight ? FORMAT_WEIGHTS[id] : 1;
       for (var i = 0; i < weight; i++) pool.push(id);
     });
     return FORMATS[rng.pick(pool)];
@@ -268,6 +281,12 @@
         return { totalMinutes: duration };
       case "tabata":
         return { blockMinutes: 4, roundsPerMovement: 8, workSec: 20, restSec: 10 };
+      case "interval":
+        return {
+          rounds: format.rounds,
+          onMinutes: rng.pick(format.onMinutesOptions),
+          restMinutes: format.restMinutes,
+        };
       case "chipper":
         return { timeCapMinutes: duration };
       case "complex": {
@@ -290,6 +309,7 @@
   function unitLabel(scheme) {
     if (scheme === "cals") return "cal";
     if (scheme === "sec") return "sec";
+    if (scheme === "meters") return "m";
     return "reps";
   }
 
@@ -305,6 +325,7 @@
     chipper: "Score: time to complete.",
     emom: "Score: reps completed each round (log your worst).",
     tabata: "Score: total reps across all intervals.",
+    interval: "Score: reps completed each round.",
   };
 
   function describeWorkout(w) {
@@ -340,6 +361,13 @@
       );
       w.movements.forEach(function (item) {
         lines.push("  " + item.name + (item.load ? " @ " + item.load : "") + " — max reps each interval");
+      });
+    } else if (w.formatId === "interval") {
+      lines.push(
+        w.meta.rounds + " rounds: " + w.meta.onMinutes + " min on / " + w.meta.restMinutes + " min off. Each 'on' block is its own AMRAP:"
+      );
+      w.movements.forEach(function (item) {
+        lines.push("  " + movementLine(item));
       });
     } else if (w.formatId === "chipper") {
       lines.push("One trip through, for time (cap " + w.meta.timeCapMinutes + " min):");

@@ -37,6 +37,8 @@
 
     logCompleted: document.getElementById("log-completed"),
     logRx: document.getElementById("log-rx"),
+    logScoreRow: document.getElementById("log-score-row"),
+    logScore: document.getElementById("log-score"),
     logNotes: document.getElementById("log-notes"),
     logSaveBtn: document.getElementById("log-save-btn"),
     logSavedMsg: document.getElementById("log-saved-msg"),
@@ -140,6 +142,7 @@
       workout: workout,
       completed: false,
       rx: "rx",
+      score: "",
       notes: "",
     });
 
@@ -151,6 +154,7 @@
   function unitLabel(scheme) {
     if (scheme === "cals") return "cal";
     if (scheme === "sec") return "sec";
+    if (scheme === "meters") return "m";
     return "reps";
   }
 
@@ -164,15 +168,31 @@
     chipper: "Score: time to complete.",
     emom: "Score: reps completed each round (log your worst).",
     tabata: "Score: total reps across all intervals.",
+    interval: "Score: reps completed each round.",
+  };
+
+  // Drives the "Score" field in Log Session — label/placeholder per
+  // format, keyed the same as SCORE_LABELS. Complex has no entry, which
+  // hides the field entirely (it isn't scored, just paced).
+  var SCORE_FIELD_LABELS = {
+    amrap: { label: "Score (rounds + reps)", placeholder: "e.g. 6 rounds + 14" },
+    for_time: { label: "Score (time)", placeholder: "e.g. 18:42" },
+    chipper: { label: "Score (time)", placeholder: "e.g. 22:10" },
+    emom: { label: "Score (reps, lowest round)", placeholder: "e.g. 12" },
+    tabata: { label: "Score (total reps)", placeholder: "e.g. 145" },
+    interval: { label: "Score (reps each round)", placeholder: "e.g. 14 / 16 / 15" },
   };
 
   function renderWorkout(workout) {
     var metaBits = [];
     if (workout.meta.timeCapMinutes != null) metaBits.push(workout.meta.timeCapMinutes + " min");
-    if (workout.meta.rounds != null) metaBits.push(workout.meta.rounds + " rounds");
+    if (workout.meta.rounds != null && workout.formatId !== "interval") metaBits.push(workout.meta.rounds + " rounds");
     if (workout.meta.totalMinutes != null) metaBits.push(workout.meta.totalMinutes + " min total");
     if (workout.formatId === "tabata") {
       metaBits.push(workout.movements.length * workout.meta.blockMinutes + " min total");
+    }
+    if (workout.formatId === "interval") {
+      metaBits.push(workout.meta.rounds + " × (" + workout.meta.onMinutes + " min on / " + workout.meta.restMinutes + " min off)");
     }
     if (workout.formatId === "complex") {
       metaBits.push(
@@ -189,6 +209,7 @@
       for_time: "Reps below are per round — complete every round listed, split however you want.",
       emom: "Reps below are the target for that movement's minute — rotate to the next movement each minute, repeating the cycle.",
       tabata: "Score max reps in each 20s interval; rest 10s between.",
+      interval: "Each round is its own AMRAP block — reps below are per round, cycle through the list as many times as you can, then rest.",
       chipper: "Reps below are the total for that movement — one trip through the whole list, split however you want.",
       complex: workout.meta.unilateralBothSides
         ? "Continuous — complete everything on one side, unbroken, then repeat on the other side. Keep the pace sustainable."
@@ -275,12 +296,25 @@
     els.logCompleted.checked = !!(entry && entry.completed);
     els.logRx.value = (entry && entry.rx) || "rx";
     els.logNotes.value = (entry && entry.notes) || "";
+
+    var formatId = entry && entry.workout ? entry.workout.formatId : null;
+    var fieldInfo = formatId ? SCORE_FIELD_LABELS[formatId] : null;
+    if (fieldInfo) {
+      els.logScoreRow.classList.remove("hidden");
+      els.logScoreRow.firstChild.textContent = fieldInfo.label;
+      els.logScore.placeholder = fieldInfo.placeholder;
+      els.logScore.value = (entry && entry.score) || "";
+    } else {
+      els.logScoreRow.classList.add("hidden");
+      els.logScore.value = "";
+    }
   }
 
   function saveLog() {
     MetconStorage.saveHistoryEntry(todayKey, {
       completed: els.logCompleted.checked,
       rx: els.logRx.value,
+      score: els.logScoreRow.classList.contains("hidden") ? "" : els.logScore.value,
       notes: els.logNotes.value,
     });
     els.logSavedMsg.classList.remove("hidden");
@@ -307,7 +341,7 @@
         var w = entry.workout;
         if (!w) return "";
         var statusClass = entry.completed ? "history-status done" : "history-status";
-        var statusText = entry.completed ? "✓ " + capitalize(entry.rx || "rx") : "Not logged";
+        var statusText = entry.completed ? "✓ " + capitalize(entry.rx || "rx") + (entry.score ? " · " + entry.score : "") : "Not logged";
         var notesHtml = entry.notes ? '<div class="history-notes">' + escapeHtml(entry.notes) + "</div>" : "";
         return (
           "<details class=\"history-item\">" +
