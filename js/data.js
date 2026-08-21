@@ -108,7 +108,7 @@
     { id: "kb_tgu", name: "KB Turkish Get-ups (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "full", scheme: "reps", base: [3, 6] },
     { id: "kb_front_rack_carry", name: "KB Front Rack Carry", category: "kettlebell", equipment: "kettlebells", requiresPair: true, space: "medium", pattern: "carry", scheme: "meters", base: [20, 35] },
     { id: "kb_suitcase_carry", name: "KB Suitcase Carry", category: "kettlebell", equipment: "kettlebells", space: "medium", pattern: "carry", scheme: "meters", base: [20, 35] },
-    { id: "kb_halo", name: "KB Halos", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
+    { id: "kb_halo", name: "KB Halos", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "core", scheme: "reps", base: [8, 14], disabled: true },
 
     // --- Sandbag -----------------------------------------------------
     { id: "sb_squat", name: "Sandbag Squats", category: "sandbag", equipment: "sandbags", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
