@@ -65,7 +65,11 @@
     // tend to burn through 20-40+ cal a round, not a token 10-16.
     { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
     { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
-    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 24], scaleNote: "Scale to step-back burpees (no push-up) if needed." },
+    // capReps: a hard override for specific formats (map of formatId ->
+    // fixed rep count), regardless of intensity/base range. Burpees are
+    // capped at 10 in AMRAP/For Time specifically — still scales normally
+    // (and much higher) in Chipper.
+    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 24], capReps: { amrap: 10, for_time: 10 }, scaleNote: "Scale to step-back burpees (no push-up) if needed." },
     { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12], disabled: true },
     { id: "mountain_climbers", name: "Mountain Climbers", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [20, 30] },
     { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30], disabled: true },
@@ -79,7 +83,7 @@
     { id: "squat_jumps", name: "Squat Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [10, 18] },
     { id: "walking_lunges", name: "Walking Lunges (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "squat", scheme: "reps", base: [16, 24] },
     { id: "stationary_lunges", name: "Alternating Stationary Lunges", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [16, 24] },
-    { id: "situps", name: "Sit-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25] },
+    { id: "situps", name: "Sit-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25], capReps: { amrap: 10, for_time: 10 } },
     { id: "vups", name: "V-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [10, 18] },
     { id: "plank_hold", name: "Plank Hold", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "sec", base: [30, 50] },
     { id: "hollow_rock", name: "Hollow Rocks", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25], disabled: true },
@@ -113,7 +117,7 @@
     { id: "sb_clean", name: "Sandbag Cleans", category: "sandbag", equipment: "sandbags", maxWeightKg: 50, space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
     { id: "sb_over_shoulder", name: "Sandbag Over-the-Shoulder", category: "sandbag", equipment: "sandbags", space: "small", pattern: "carry", scheme: "reps", base: [8, 14] },
     { id: "sb_bear_hug_carry", name: "Sandbag Bear Hug Carry", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "carry", scheme: "meters", base: [15, 30] },
-    { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8] },
+    { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8], disabled: true },
 
     // --- Optional gear (off by default) --------------------------------
     { id: "pullups", name: "Pull-ups", category: "pullup", equipment: "pullupBar", space: "small", pattern: "pull", scheme: "reps", base: [6, 10], scaleNote: "Scale to banded or ring rows if needed." },

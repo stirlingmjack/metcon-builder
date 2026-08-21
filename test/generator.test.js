@@ -533,4 +533,66 @@ test("forcedFormatId is deterministic and repeats the same format across seeds",
   }
 });
 
+test("Sandbag Get-ups are disabled and never appear", function () {
+  var pool = generator.getAvailablePool(DEFAULT_EQUIPMENT);
+  assert.ok(
+    pool.every(function (m) {
+      return m.id !== "sb_get_up";
+    }),
+    "sb_get_up should be excluded from the available pool"
+  );
+  for (var i = 0; i < 200; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "moderate",
+      seed: "sbgu-check-" + i,
+    });
+    assert.ok(
+      w.movements.every(function (m) {
+        return m.id !== "sb_get_up";
+      }),
+      "sb_get_up should never be generated"
+    );
+  }
+});
+
+test("Burpees and Sit-ups are capped at 10 reps in AMRAP/For Time regardless of intensity, but scale normally elsewhere", function () {
+  ["light", "moderate", "hard"].forEach(function (intensity) {
+    ["amrap", "for_time"].forEach(function (formatId) {
+      var w = generator.generateWorkout({
+        equipment: DEFAULT_EQUIPMENT,
+        duration: 18,
+        intensity: intensity,
+        seed: "cap-" + formatId + "-" + intensity,
+        forcedFormatId: formatId,
+      });
+      w.movements.forEach(function (m) {
+        if (m.id === "burpees" || m.id === "situps") {
+          assert.strictEqual(m.amount, 10, m.id + " should be exactly 10 reps in " + formatId + "/" + intensity);
+        }
+      });
+    });
+  });
+
+  // Chipper isn't in capReps for these movements, so it should be able to
+  // exceed 10 (it already targets 50-90+ at hard — see the earlier
+  // bodyweight-calibration test).
+  var sawUncapped = false;
+  for (var i = 0; i < 300 && !sawUncapped; i++) {
+    var w2 = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 28,
+      intensity: "hard",
+      seed: "cap-chipper-" + i,
+      forcedFormatId: "chipper",
+    });
+    var hit = w2.movements.filter(function (m) {
+      return m.id === "burpees" || m.id === "situps";
+    })[0];
+    if (hit && hit.amount > 10) sawUncapped = true;
+  }
+  assert.ok(sawUncapped, "expected burpees/sit-ups to exceed 10 reps in chipper within 300 seeds");
+});
+
 console.log(passed + " tests passed");

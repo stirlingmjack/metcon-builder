@@ -210,8 +210,14 @@
   // Scales a movement's baseline range for the given format + intensity
   // (and, for loaded movements, how heavy the picked weight is — see
   // weightDampening). Returns null for formats with no prescribed amount
-  // (e.g. Tabata).
+  // (e.g. Tabata). A movement's capReps (format id -> fixed rep count)
+  // hard-overrides the usual range for that format specifically — e.g.
+  // Burpees stay at 10 in AMRAP/For Time regardless of intensity, while
+  // still scaling normally (and much higher) in Chipper.
   function scaleAmount(movement, format, intensity, rng, dampening) {
+    if (movement.capReps && movement.capReps[format.id] != null) {
+      return movement.capReps[format.id];
+    }
     if (format.repMultiplier == null) return null;
     var mult = format.repMultiplier * (INTENSITY_MULTIPLIER[intensity] || 1) * (dampening || 1);
     var lo = movement.base[0] * mult;
