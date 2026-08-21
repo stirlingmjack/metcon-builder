@@ -66,6 +66,7 @@
   function getAvailablePool(equipment) {
     var spaceRank = SPACE_RANK[equipment.space] != null ? SPACE_RANK[equipment.space] : SPACE_RANK.medium;
     return MOVEMENTS.filter(function (m) {
+      if (m.disabled) return false;
       if (SPACE_RANK[m.space] > spaceRank) return false;
       if (m.equipment === null) return equipment.bodyweight !== false;
       if (!isEquipmentAvailable(equipment, m.equipment)) return false;
@@ -115,7 +116,16 @@
     if (!movement.equipment) return null;
     var eq = equipment[movement.equipment];
     if (!eq || typeof eq !== "object" || !eq.weightsKg || eq.weightsKg.length === 0) return null;
-    var weights = movement.requiresPair ? getPairWeights(eq.weightsKg) : eq.weightsKg;
+    var ownedWeights = eq.weightsKg;
+    // Some movements aren't realistic at the top of what you own (cleaning
+    // a 90kg sandbag for reps) — cap the pool of weights to choose from.
+    if (movement.maxWeightKg != null) {
+      var capped = ownedWeights.filter(function (w) {
+        return w <= movement.maxWeightKg;
+      });
+      if (capped.length > 0) ownedWeights = capped;
+    }
+    var weights = movement.requiresPair ? getPairWeights(ownedWeights) : ownedWeights;
     if (!weights.length) return null;
     var w = pickWeight(weights, intensity, rng);
     if (w == null) return null;
@@ -123,6 +133,46 @@
       raw: w,
       allWeights: weights,
       formatted: movement.requiresPair ? w + "/" + w + " kg" : w + " kg",
+    };
+  }
+
+  // Like computeLoad, but for a group of movements that must all share one
+  // pick (a Complex's continuous flow — you're carrying one bag/bell the
+  // whole way through). The tightest maxWeightKg among the group applies
+  // to all of them: if any one movement in the flow can't handle the
+  // heaviest weight owned, nothing in the flow uses it.
+  function computeGroupLoad(movements, equipment, intensity, rng) {
+    var anchor = movements.filter(function (m) {
+      return m.equipment != null;
+    })[0];
+    if (!anchor) return null;
+    var eq = equipment[anchor.equipment];
+    if (!eq || typeof eq !== "object" || !eq.weightsKg || eq.weightsKg.length === 0) return null;
+
+    var groupCap = null;
+    movements.forEach(function (m) {
+      if (m.equipment === anchor.equipment && m.maxWeightKg != null) {
+        groupCap = groupCap == null ? m.maxWeightKg : Math.min(groupCap, m.maxWeightKg);
+      }
+    });
+
+    var ownedWeights = eq.weightsKg;
+    if (groupCap != null) {
+      var capped = ownedWeights.filter(function (w) {
+        return w <= groupCap;
+      });
+      if (capped.length > 0) ownedWeights = capped;
+    }
+
+    var weights = anchor.requiresPair ? getPairWeights(ownedWeights) : ownedWeights;
+    if (!weights.length) return null;
+    var w = pickWeight(weights, intensity, rng);
+    if (w == null) return null;
+    return {
+      raw: w,
+      allWeights: weights,
+      formatted: anchor.requiresPair ? w + "/" + w + " kg" : w + " kg",
+      category: anchor.category,
     };
   }
 
@@ -503,14 +553,9 @@
     var sharedLoad = null;
     var sharedLoadInfo = null;
     if (format.id === "complex") {
-      var anchorMovement = chosenMovements.filter(function (m) {
-        return m.equipment != null;
-      })[0];
-      if (anchorMovement) {
-        sharedLoadInfo = computeLoad(anchorMovement, equipment, intensity, rng);
-        if (sharedLoadInfo) {
-          sharedLoad = { label: anchorMovement.category === "sandbag" ? "sandbag" : "bell", value: sharedLoadInfo.formatted };
-        }
+      sharedLoadInfo = computeGroupLoad(chosenMovements, equipment, intensity, rng);
+      if (sharedLoadInfo) {
+        sharedLoad = { label: sharedLoadInfo.category === "sandbag" ? "sandbag" : "bell", value: sharedLoadInfo.formatted };
       }
     }
 

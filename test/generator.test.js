@@ -38,7 +38,7 @@ test("getAvailablePool respects space constraint", function () {
   var ids = pool.map(function (m) {
     return m.id;
   });
-  assert.ok(ids.indexOf("shuttle_run") === -1, "shuttle run needs medium space");
+  assert.ok(ids.indexOf("walking_lunges") === -1, "walking lunges needs medium space");
   assert.ok(ids.indexOf("kb_swing") !== -1, "small-space movement should remain available");
 });
 
@@ -387,6 +387,92 @@ test("Complex round count scales up with duration", function () {
     }, 0) / arr.length;
   };
   assert.ok(avg(long) > avg(short), "a 60-min complex should prescribe more rounds than a 10-min one");
+});
+
+test("Disabled movements never appear in the pool or in generated workouts", function () {
+  var DISABLED_IDS = [
+    "burpee_broad_jump",
+    "high_knees",
+    "jumping_jacks",
+    "shuttle_run",
+    "star_jumps",
+    "hollow_rock",
+    "superman_raise",
+    "bear_crawl",
+    "crab_walk",
+  ];
+  var pool = generator.getAvailablePool(DEFAULT_EQUIPMENT);
+  var poolIds = pool.map(function (m) {
+    return m.id;
+  });
+  DISABLED_IDS.forEach(function (id) {
+    assert.ok(poolIds.indexOf(id) === -1, id + " should be excluded from the available pool");
+  });
+
+  for (var i = 0; i < 200; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "moderate",
+      seed: "disabled-check-" + i,
+    });
+    w.movements.forEach(function (m) {
+      assert.ok(DISABLED_IDS.indexOf(m.id) === -1, m.id + " should never be generated");
+    });
+  }
+});
+
+test("Sandbag Cleans are capped at 50kg even at hard intensity", function () {
+  var byId = {};
+  MetconData.MOVEMENTS.forEach(function (m) {
+    byId[m.id] = m;
+  });
+  var sbClean = byId.sb_clean;
+  assert.strictEqual(sbClean.maxWeightKg, 50);
+
+  for (var i = 0; i < 200; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "hard",
+      seed: "sbclean-cap-" + i,
+    });
+    var hit = w.movements.filter(function (m) {
+      return m.id === "sb_clean";
+    })[0];
+    if (hit) {
+      // Complex suppresses the per-movement load in favor of one shared
+      // load for the whole circuit — check that instead when it applies.
+      var actual = hit.load != null ? hit.load : w.sharedLoad && w.sharedLoad.value;
+      assert.strictEqual(actual, "50 kg", "sandbag cleans should always load 50kg (directly or via sharedLoad), got " + actual);
+    }
+  }
+});
+
+test("Complex sharedLoad respects a per-movement maxWeightKg even when that movement isn't the anchor", function () {
+  var byId = {};
+  MetconData.MOVEMENTS.forEach(function (m) {
+    byId[m.id] = m;
+  });
+  // Any sandbag complex that happens to include cleans (capped 50kg) must
+  // share a 50kg load for the whole circuit, even when cleans aren't the
+  // first equipped movement (the "anchor") in the list.
+  for (var i = 0; i < 300; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "hard",
+      seed: "group-cap-" + i,
+    });
+    if (w.formatId === "complex" && w.sharedLoad && w.sharedLoad.label === "sandbag") {
+      var hasClean = w.movements.some(function (m) {
+        return m.id === "sb_clean";
+      });
+      if (hasClean) {
+        assert.strictEqual(w.sharedLoad.value, "50 kg", "a sandbag complex including cleans must share the 50kg load");
+      }
+    }
+  }
 });
 
 console.log(passed + " tests passed");

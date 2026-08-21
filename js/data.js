@@ -66,12 +66,12 @@
     { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
     { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
     { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 24], scaleNote: "Scale to step-back burpees (no push-up) if needed." },
-    { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12] },
+    { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12], disabled: true },
     { id: "mountain_climbers", name: "Mountain Climbers", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [20, 30] },
-    { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30] },
-    { id: "jumping_jacks", name: "Jumping Jacks", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [20, 30] },
-    { id: "shuttle_run", name: "Shuttle Runs", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [4, 8] },
-    { id: "star_jumps", name: "Star Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 20] },
+    { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30], disabled: true },
+    { id: "jumping_jacks", name: "Jumping Jacks", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [20, 30], disabled: true },
+    { id: "shuttle_run", name: "Shuttle Runs", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [4, 8], disabled: true },
+    { id: "star_jumps", name: "Star Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 20], disabled: true },
 
     // --- Bodyweight strength / gymnastic --------------------------------
     { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [8, 13], scaleNote: "Scale to knee push-ups if needed." },
@@ -82,10 +82,10 @@
     { id: "situps", name: "Sit-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25] },
     { id: "vups", name: "V-ups", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [10, 18] },
     { id: "plank_hold", name: "Plank Hold", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "sec", base: [30, 50] },
-    { id: "hollow_rock", name: "Hollow Rocks", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25] },
-    { id: "superman_raise", name: "Superman Raises", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [12, 20] },
-    { id: "bear_crawl", name: "Bear Crawl (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24] },
-    { id: "crab_walk", name: "Crab Walk (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24] },
+    { id: "hollow_rock", name: "Hollow Rocks", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [15, 25], disabled: true },
+    { id: "superman_raise", name: "Superman Raises", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [12, 20], disabled: true },
+    { id: "bear_crawl", name: "Bear Crawl (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24], disabled: true },
+    { id: "crab_walk", name: "Crab Walk (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24], disabled: true },
 
     // --- Kettlebell ------------------------------------------------------
     // Names spell out "(each side)" wherever the rep count is per arm —
@@ -109,7 +109,8 @@
     // --- Sandbag -----------------------------------------------------
     { id: "sb_squat", name: "Sandbag Squats", category: "sandbag", equipment: "sandbags", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
     { id: "sb_lunge", name: "Sandbag Alternating Lunges", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "squat", scheme: "reps", base: [14, 20] },
-    { id: "sb_clean", name: "Sandbag Cleans", category: "sandbag", equipment: "sandbags", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
+    // Capped at 50kg — cleaning the 90kg bag for reps isn't realistic.
+    { id: "sb_clean", name: "Sandbag Cleans", category: "sandbag", equipment: "sandbags", maxWeightKg: 50, space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
     { id: "sb_over_shoulder", name: "Sandbag Over-the-Shoulder", category: "sandbag", equipment: "sandbags", space: "small", pattern: "carry", scheme: "reps", base: [8, 14] },
     { id: "sb_bear_hug_carry", name: "Sandbag Bear Hug Carry", category: "sandbag", equipment: "sandbags", space: "medium", pattern: "carry", scheme: "meters", base: [15, 30] },
     { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8] },
