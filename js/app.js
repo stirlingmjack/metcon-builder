@@ -158,6 +158,14 @@
     els.workoutCard.innerHTML = '<div class="error-box">' + escapeHtml(message) + "</div>";
   }
 
+  var SCORE_LABELS = {
+    amrap: "Score: rounds + reps completed.",
+    for_time: "Score: time to complete.",
+    chipper: "Score: time to complete.",
+    emom: "Score: reps completed each round (log your worst).",
+    tabata: "Score: total reps across all intervals.",
+  };
+
   function renderWorkout(workout) {
     var metaBits = [];
     if (workout.meta.timeCapMinutes != null) metaBits.push(workout.meta.timeCapMinutes + " min");
@@ -166,14 +174,25 @@
     if (workout.formatId === "tabata") {
       metaBits.push(workout.movements.length * workout.meta.blockMinutes + " min total");
     }
+    if (workout.formatId === "complex") {
+      metaBits.push(
+        workout.meta.roundsMin === workout.meta.roundsMax
+          ? workout.meta.roundsMin + " rounds"
+          : workout.meta.roundsMin + "–" + workout.meta.roundsMax + " rounds"
+      );
+      if (workout.sharedLoad) metaBits.push(capitalize(workout.sharedLoad.label) + ": " + workout.sharedLoad.value);
+    }
     metaBits.push(capitalize(workout.intensity) + " intensity");
 
     var formatNotes = {
       amrap: "Reps below are per round — cycle through the list as many times as you can.",
-      for_time: "Reps below are per round — complete every round listed, as fast as possible.",
+      for_time: "Reps below are per round — complete every round listed, split however you want.",
       emom: "Reps below are the target for that movement's minute — rotate to the next movement each minute, repeating the cycle.",
       tabata: "Score max reps in each 20s interval; rest 10s between.",
-      chipper: "Reps below are the total for that movement — one trip through the whole list.",
+      chipper: "Reps below are the total for that movement — one trip through the whole list, split however you want.",
+      complex: workout.meta.unilateralBothSides
+        ? "Continuous — complete everything on one side, unbroken, then repeat on the other side. Keep the pace sustainable."
+        : "Continuous flow, minimal rest, same load the whole way through. Keep the pace sustainable.",
     };
     var formatNote = formatNotes[workout.formatId] || "";
 
@@ -191,6 +210,17 @@
         );
       })
       .join("");
+
+    var scoreLine = SCORE_LABELS[workout.formatId];
+    var scaleNotes = [];
+    workout.movements.forEach(function (item) {
+      if (item.scaleNote && scaleNotes.indexOf(item.scaleNote) === -1) scaleNotes.push(item.scaleNote);
+    });
+    var footerNotesHtml =
+      (scoreLine ? '<div class="score-line">' + escapeHtml(scoreLine) + "</div>" : "") +
+      (scaleNotes.length
+        ? '<div class="scale-notes">' + scaleNotes.map(function (n) { return "Scale: " + escapeHtml(n); }).join("<br>") + "</div>"
+        : "");
 
     els.workoutCard.innerHTML =
       '<div class="workout-card">' +
@@ -211,6 +241,7 @@
       '<ul class="movement-list">' +
       itemsHtml +
       "</ul>" +
+      (footerNotesHtml ? '<div class="score-footer">' + footerNotesHtml + "</div>" : "") +
       '<div class="card-footer">' +
       '<button class="btn btn-ghost" id="copy-workout-btn" type="button">📋 Copy</button>' +
       "</div>" +

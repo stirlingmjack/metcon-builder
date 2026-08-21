@@ -61,9 +61,11 @@
 
   var MOVEMENTS = [
     // --- Cardio / monostructural ---------------------------------------
-    { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [10, 16] },
-    { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [10, 16] },
-    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [8, 15] },
+    // Erg base ranges run a bit hot on purpose — real chipper/for-time pieces
+    // tend to burn through 20-40+ cal a round, not a token 10-16.
+    { id: "bike_cal", name: "Bike Erg", category: "erg", equipment: "bikeErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
+    { id: "row_cal", name: "Row Erg", category: "erg", equipment: "rowErg", space: "small", pattern: "cardio", scheme: "cals", base: [20, 35] },
+    { id: "burpees", name: "Burpees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [8, 15], scaleNote: "Scale to step-back burpees (no push-up) if needed." },
     { id: "burpee_broad_jump", name: "Burpee Broad Jumps", category: "bodyweight", equipment: null, space: "medium", pattern: "cardio", scheme: "reps", base: [6, 12] },
     { id: "mountain_climbers", name: "Mountain Climbers", category: "bodyweight", equipment: null, space: "small", pattern: "core", scheme: "reps", base: [20, 30] },
     { id: "high_knees", name: "High Knees", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "sec", base: [20, 30] },
@@ -72,7 +74,7 @@
     { id: "star_jumps", name: "Star Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "cardio", scheme: "reps", base: [12, 20] },
 
     // --- Bodyweight strength / gymnastic --------------------------------
-    { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [10, 18] },
+    { id: "pushups", name: "Push-ups", category: "bodyweight", equipment: null, space: "small", pattern: "push", scheme: "reps", base: [10, 18], scaleNote: "Scale to knee push-ups if needed." },
     { id: "air_squats", name: "Air Squats", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [15, 25] },
     { id: "squat_jumps", name: "Squat Jumps", category: "bodyweight", equipment: null, space: "small", pattern: "squat", scheme: "reps", base: [10, 18] },
     { id: "walking_lunges", name: "Walking Lunges (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "squat", scheme: "reps", base: [16, 24] },
@@ -86,14 +88,20 @@
     { id: "crab_walk", name: "Crab Walk (steps)", category: "bodyweight", equipment: null, space: "medium", pattern: "full", scheme: "reps", base: [16, 24] },
 
     // --- Kettlebell ------------------------------------------------------
+    // Names spell out "(each side)" wherever the rep count is per arm —
+    // matches how these get written on a whiteboard, and removes any
+    // ambiguity about total-vs-per-side reps.
     { id: "kb_swing", name: "Kettlebell Swings", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "hinge", scheme: "reps", base: [15, 22] },
     { id: "kb_goblet_squat", name: "KB Goblet Squats", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "squat", scheme: "reps", base: [12, 18] },
-    { id: "kb_clean_press", name: "KB Single-Arm Clean & Press", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "push", scheme: "reps", base: [8, 14] },
-    { id: "kb_snatch", name: "KB Single-Arm Snatch", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
-    { id: "kb_thruster", name: "KB Single-Arm Thruster", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
+    { id: "kb_front_rack_squat", name: "KB Front Rack Squats (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "kb_clean_press", name: "KB Clean & Press (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "push", scheme: "reps", base: [8, 14] },
+    { id: "kb_push_press", name: "KB Push Press (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "push", scheme: "reps", base: [8, 14] },
+    { id: "kb_snatch", name: "KB Snatch (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "pull", scheme: "reps", base: [10, 16] },
+    { id: "kb_thruster", name: "KB Thruster (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
     { id: "kb_suitcase_deadlift", name: "KB Suitcase Deadlifts", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "hinge", scheme: "reps", base: [12, 18] },
-    { id: "kb_row", name: "KB Single-Arm Row", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "pull", scheme: "reps", base: [10, 16] },
-    { id: "kb_tgu", name: "KB Turkish Get-ups (each side)", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "full", scheme: "reps", base: [3, 6] },
+    { id: "kb_reverse_lunge", name: "KB Reverse Lunges (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "kb_row", name: "KB Row (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "pull", scheme: "reps", base: [10, 16] },
+    { id: "kb_tgu", name: "KB Turkish Get-ups (each side)", category: "kettlebell", equipment: "kettlebells", eachSide: true, space: "small", pattern: "full", scheme: "reps", base: [3, 6] },
     { id: "kb_front_rack_carry", name: "KB Front Rack Carry (steps)", category: "kettlebell", equipment: "kettlebells", requiresPair: true, space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
     { id: "kb_suitcase_carry", name: "KB Suitcase Carry (steps)", category: "kettlebell", equipment: "kettlebells", space: "medium", pattern: "carry", scheme: "reps", base: [20, 30] },
     { id: "kb_halo", name: "KB Halos", category: "kettlebell", equipment: "kettlebells", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
@@ -107,12 +115,12 @@
     { id: "sb_get_up", name: "Sandbag Get-ups (each side)", category: "sandbag", equipment: "sandbags", space: "small", pattern: "full", scheme: "reps", base: [4, 8] },
 
     // --- Optional gear (off by default) --------------------------------
-    { id: "pullups", name: "Pull-ups", category: "pullup", equipment: "pullupBar", space: "small", pattern: "pull", scheme: "reps", base: [6, 10] },
+    { id: "pullups", name: "Pull-ups", category: "pullup", equipment: "pullupBar", space: "small", pattern: "pull", scheme: "reps", base: [6, 10], scaleNote: "Scale to banded or ring rows if needed." },
     { id: "t2b", name: "Toes-to-Bar", category: "pullup", equipment: "pullupBar", space: "small", pattern: "core", scheme: "reps", base: [6, 10] },
     { id: "hanging_knee_raise", name: "Hanging Knee Raises", category: "pullup", equipment: "pullupBar", space: "small", pattern: "core", scheme: "reps", base: [8, 14] },
     { id: "du", name: "Double-Unders", category: "jumprope", equipment: "jumpRope", space: "small", pattern: "cardio", scheme: "reps", base: [20, 35] },
     { id: "su", name: "Single-Unders", category: "jumprope", equipment: "jumpRope", space: "small", pattern: "cardio", scheme: "reps", base: [30, 50] },
-    { id: "box_jump", name: "Box Jumps", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
+    { id: "box_jump", name: "Box Jumps", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14], scaleNote: "Scale to step-ups if needed." },
     { id: "box_step_up", name: "Box Step-ups (each side)", category: "box", equipment: "plyoBox", space: "small", pattern: "squat", scheme: "reps", base: [8, 14] },
     { id: "db_thruster", name: "Dumbbell Thrusters", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "squat", scheme: "reps", base: [10, 16] },
     { id: "db_snatch", name: "DB Single-Arm Snatch", category: "dumbbell", equipment: "dumbbells", space: "small", pattern: "pull", scheme: "reps", base: [8, 14] },
@@ -132,7 +140,7 @@
       name: "AMRAP",
       description: "As Many Rounds/Reps As Possible",
       repMultiplier: 1,
-      movementCount: { light: 2, moderate: 3, hard: 3 },
+      movementCount: { light: 2, moderate: 3, hard: 4 },
     },
     for_time: {
       id: "for_time",
@@ -158,10 +166,32 @@
     chipper: {
       id: "chipper",
       name: "Chipper",
-      description: "One trip through the whole list, for time",
-      repMultiplier: 2.5,
-      movementCount: { light: 3, moderate: 5, hard: 7 },
+      description: "One trip through the whole list, split the reps however you want",
+      repMultiplier: 3,
+      movementCount: { light: 2, moderate: 3, hard: 4 },
     },
+    complex: {
+      id: "complex",
+      name: "Complex",
+      description: "Continuous flow, minimal rest — hold the same load the whole way through",
+      repMultiplier: 0.7,
+      movementCount: { light: 3, moderate: 4, hard: 4 },
+      // Rounds are prescribed directly (not time-capped) — see buildFormatMeta.
+      roundsRange: { light: [4, 6], moderate: [5, 8], hard: [6, 10] },
+    },
+  };
+
+  // Relative odds each format gets picked (before excluding yesterday's
+  // format). Weighted toward for_time/complex/chipper and away from
+  // emom/tabata to match a "continuous flow + erg-anchored metcon" taste
+  // rather than interval-style training.
+  var FORMAT_WEIGHTS = {
+    amrap: 2,
+    for_time: 3,
+    emom: 1,
+    tabata: 1,
+    chipper: 2,
+    complex: 3,
   };
 
   var INTENSITY_MULTIPLIER = { light: 0.8, moderate: 1.0, hard: 1.25 };
@@ -172,6 +202,7 @@
     DEFAULT_EQUIPMENT: DEFAULT_EQUIPMENT,
     MOVEMENTS: MOVEMENTS,
     FORMATS: FORMATS,
+    FORMAT_WEIGHTS: FORMAT_WEIGHTS,
     INTENSITY_MULTIPLIER: INTENSITY_MULTIPLIER,
     SPACE_RANK: SPACE_RANK,
   };

@@ -14,10 +14,16 @@
 
   var MOVEMENTS = MetconData.MOVEMENTS;
   var FORMATS = MetconData.FORMATS;
+  var FORMAT_WEIGHTS = MetconData.FORMAT_WEIGHTS;
   var DEFAULT_EQUIPMENT = MetconData.DEFAULT_EQUIPMENT;
   var INTENSITY_MULTIPLIER = MetconData.INTENSITY_MULTIPLIER;
   var SPACE_RANK = MetconData.SPACE_RANK;
   var createRng = MetconRng.createRng;
+
+  // Equipment categories a "Complex" (continuous, one-implement circuit)
+  // can reasonably be built from — bodyweight is deliberately excluded
+  // here since it's mixed in separately, not the anchor implement.
+  var COMPLEX_EQUIPMENT_CATEGORIES = ["kettlebell", "sandbag", "dumbbell", "barbell"];
 
   // -----------------------------------------------------------------
   // Equipment / pool helpers
@@ -90,7 +96,10 @@
     return sorted[rng.int(lo, hi)];
   }
 
-  function movementLoad(movement, equipment, intensity, rng) {
+  // Picks a weight for a loaded movement and returns both the formatted
+  // string ("24 kg" / "24/24 kg") and enough raw info (the numeric pick +
+  // the full weight list it came from) to compute rep dampening below.
+  function computeLoad(movement, equipment, intensity, rng) {
     if (!movement.equipment) return null;
     var eq = equipment[movement.equipment];
     if (!eq || typeof eq !== "object" || !eq.weightsKg || eq.weightsKg.length === 0) return null;
@@ -98,7 +107,23 @@
     if (!weights.length) return null;
     var w = pickWeight(weights, intensity, rng);
     if (w == null) return null;
-    return movement.requiresPair ? w + "/" + w + " kg" : w + " kg";
+    return {
+      raw: w,
+      allWeights: weights,
+      formatted: movement.requiresPair ? w + "/" + w + " kg" : w + " kg",
+    };
+  }
+
+  // A heavy pick (near the top of what's available for that implement)
+  // trims the rep target down — nobody's doing 40 unbroken reps at their
+  // heaviest sandbag. A light pick gets no reduction.
+  function weightDampening(rawWeight, allWeights) {
+    if (rawWeight == null || !allWeights || allWeights.length < 2) return 1;
+    var min = Math.min.apply(null, allWeights);
+    var max = Math.max.apply(null, allWeights);
+    if (max === min) return 1;
+    var pct = (rawWeight - min) / (max - min);
+    return 1 - 0.35 * pct;
   }
 
   function niceRound(val, scheme) {
@@ -109,11 +134,13 @@
     return Math.round(val);
   }
 
-  // Scales a movement's baseline range for the given format + intensity.
-  // Returns null for formats with no prescribed amount (e.g. Tabata).
-  function scaleAmount(movement, format, intensity, rng) {
+  // Scales a movement's baseline range for the given format + intensity
+  // (and, for loaded movements, how heavy the picked weight is — see
+  // weightDampening). Returns null for formats with no prescribed amount
+  // (e.g. Tabata).
+  function scaleAmount(movement, format, intensity, rng, dampening) {
     if (format.repMultiplier == null) return null;
-    var mult = format.repMultiplier * (INTENSITY_MULTIPLIER[intensity] || 1);
+    var mult = format.repMultiplier * (INTENSITY_MULTIPLIER[intensity] || 1) * (dampening || 1);
     var lo = movement.base[0] * mult;
     var hi = movement.base[1] * mult;
     var val = rng.int(Math.round(lo), Math.round(hi));
@@ -125,13 +152,72 @@
   // Format + movement selection
   // -----------------------------------------------------------------
 
+  // Weighted pick (see FORMAT_WEIGHTS) that excludes yesterday's format
+  // when possible, so the same shape doesn't show up two days running.
   function selectFormat(rng, lastFormatId) {
     var ids = Object.keys(FORMATS);
     var candidates = ids.filter(function (id) {
       return id !== lastFormatId;
     });
     if (candidates.length === 0) candidates = ids;
-    return FORMATS[rng.pick(candidates)];
+
+    var pool = [];
+    candidates.forEach(function (id) {
+      var weight = (FORMAT_WEIGHTS && FORMAT_WEIGHTS[id]) || 1;
+      for (var i = 0; i < weight; i++) pool.push(id);
+    });
+    return FORMATS[rng.pick(pool)];
+  }
+
+  // Picks which equipment category a Complex should be built around (you
+  // physically can't swap implements mid-flow), preferring whichever
+  // category has the most available movements. Returns null if only
+  // bodyweight is available, in which case the complex is bodyweight-only.
+  function pickComplexEquipmentCategory(pool, rng) {
+    var counts = {};
+    pool.forEach(function (m) {
+      if (COMPLEX_EQUIPMENT_CATEGORIES.indexOf(m.category) !== -1) {
+        counts[m.category] = (counts[m.category] || 0) + 1;
+      }
+    });
+    var available = Object.keys(counts).filter(function (cat) {
+      return counts[cat] >= 3; // need enough movements to build a circuit
+    });
+    if (available.length === 0) return null;
+    return rng.pick(available);
+  }
+
+  // Builds the movement pool for a Complex: mostly one implement (so the
+  // same bell/bag carries the whole flow), with a small chance of mixing
+  // in one bodyweight movement (a push-up, a swing-adjacent cardio beat).
+  // When unilateralOnly is set, restricts to movements that can actually
+  // be done one side at a time (excludes two-handed/paired movements like
+  // a front-rack carry or goblet squat). `category` is decided by the
+  // caller (via pickComplexEquipmentCategory) so it can also drive the
+  // unilateralBothSides decision before movements are picked.
+  function buildComplexPool(pool, category, rng, unilateralOnly) {
+    if (!category) {
+      return pool.filter(function (m) {
+        return m.category === "bodyweight";
+      });
+    }
+    var anchored = pool.filter(function (m) {
+      return m.category === category;
+    });
+    if (unilateralOnly) {
+      return anchored.filter(function (m) {
+        return m.eachSide === true;
+      });
+    }
+    if (rng.chance(0.4)) {
+      var bodyweightOptions = pool.filter(function (m) {
+        return m.category === "bodyweight" && (m.pattern === "push" || m.pattern === "core" || m.pattern === "cardio");
+      });
+      if (bodyweightOptions.length > 0) {
+        anchored = anchored.concat([rng.pick(bodyweightOptions)]);
+      }
+    }
+    return anchored;
   }
 
   // Picks `count` movements from the pool, softly preferring pattern
@@ -184,6 +270,14 @@
         return { blockMinutes: 4, roundsPerMovement: 8, workSec: 20, restSec: 10 };
       case "chipper":
         return { timeCapMinutes: duration };
+      case "complex": {
+        var cRange = format.roundsRange[intensity] || format.roundsRange.moderate;
+        var roundsMin = rng.int(cRange[0], cRange[1] - 1);
+        // ~50% of the time show a single fixed round count, otherwise a
+        // small range (mirrors how these actually get written up).
+        var roundsMax = rng.chance(0.5) ? roundsMin : Math.min(cRange[1], roundsMin + rng.int(1, 3));
+        return { roundsMin: roundsMin, roundsMax: roundsMax, continuous: true };
+      }
       default:
         return {};
     }
@@ -205,6 +299,14 @@
     return amountStr + " " + item.name + loadStr;
   }
 
+  var SCORE_LINES = {
+    amrap: "Score: rounds + reps completed.",
+    for_time: "Score: time to complete.",
+    chipper: "Score: time to complete.",
+    emom: "Score: reps completed each round (log your worst).",
+    tabata: "Score: total reps across all intervals.",
+  };
+
   function describeWorkout(w) {
     var lines = [w.formatName + " — " + w.formatDescription, ""];
 
@@ -214,7 +316,7 @@
         lines.push("  " + movementLine(item));
       });
     } else if (w.formatId === "for_time") {
-      lines.push(w.meta.rounds + " rounds for time (cap " + w.meta.timeCapMinutes + " min):");
+      lines.push(w.meta.rounds + " rounds for time (cap " + w.meta.timeCapMinutes + " min) — split however you want:");
       w.movements.forEach(function (item) {
         lines.push("  " + movementLine(item));
       });
@@ -240,11 +342,51 @@
         lines.push("  " + item.name + (item.load ? " @ " + item.load : "") + " — max reps each interval");
       });
     } else if (w.formatId === "chipper") {
-      lines.push("Chipper — one trip through, for time (cap " + w.meta.timeCapMinutes + " min):");
+      lines.push("One trip through, for time (cap " + w.meta.timeCapMinutes + " min):");
       w.movements.forEach(function (item) {
         lines.push("  " + movementLine(item));
       });
+    } else if (w.formatId === "complex") {
+      var roundsLabel = w.meta.roundsMin === w.meta.roundsMax ? w.meta.roundsMin + " rounds" : w.meta.roundsMin + "–" + w.meta.roundsMax + " rounds";
+      if (w.sharedLoad) {
+        lines.push(roundsLabel + ", continuous — same " + w.sharedLoad.label + " (" + w.sharedLoad.value + ") the whole way through:");
+      } else {
+        lines.push(roundsLabel + ", continuous:");
+      }
+      if (w.meta.unilateralBothSides) {
+        lines.push("  Complete everything on one side, unbroken, then repeat on the other side:");
+      }
+      w.movements.forEach(function (item) {
+        var amountStr = item.amount != null ? item.amount + " " + unitLabel(item.scheme) : "max effort";
+        var loadStr = !w.sharedLoad && item.load ? " @ " + item.load : "";
+        lines.push("  " + amountStr + " " + item.name + loadStr);
+      });
+      if (w.meta.unilateralBothSides) {
+        lines.push("  Then repeat the whole thing on the other side.");
+      }
+      lines.push("");
+      lines.push("Keep the pace sustainable — aim to still look composed in the final round.");
     }
+
+    var scoreLine = SCORE_LINES[w.formatId];
+    if (scoreLine) {
+      lines.push("");
+      lines.push(scoreLine);
+    }
+
+    var scaleNotes = [];
+    w.movements.forEach(function (item) {
+      if (item.scaleNote && scaleNotes.indexOf(item.scaleNote) === -1) {
+        scaleNotes.push(item.scaleNote);
+      }
+    });
+    if (scaleNotes.length > 0) {
+      lines.push("");
+      scaleNotes.forEach(function (note) {
+        lines.push("Scale: " + note);
+      });
+    }
+
     return lines.join("\n");
   }
 
@@ -268,8 +410,28 @@
     }
 
     var format = selectFormat(rng, lastFormatId);
+
+    // Complexes flow with one implement, so narrow the pool to a single
+    // equipment category (± one bodyweight movement) before picking. The
+    // unilateralBothSides call has to happen before movement selection so
+    // it can restrict the pool to movements that are actually doable one
+    // side at a time (a front-rack carry can't be).
+    var complexCategory = null;
+    var unilateralBothSides = false;
+    if (format.id === "complex") {
+      complexCategory = pickComplexEquipmentCategory(pool, rng);
+      if (complexCategory === "kettlebell") {
+        unilateralBothSides = rng.chance(0.3);
+      }
+    }
+    var workingPool = format.id === "complex" ? buildComplexPool(pool, complexCategory, rng, unilateralBothSides) : pool;
+    if (workingPool.length === 0) {
+      workingPool = pool;
+      unilateralBothSides = false;
+    }
+
     var wantedCount = format.movementCount[intensity] || format.movementCount.moderate;
-    wantedCount = Math.min(wantedCount, pool.length);
+    wantedCount = Math.min(wantedCount, workingPool.length);
 
     if (format.id === "tabata") {
       var blocks = Math.max(1, Math.floor(duration / 4));
@@ -279,17 +441,43 @@
       wantedCount = Math.min(wantedCount, Math.max(1, Math.floor(duration)));
     }
 
-    var chosenMovements = selectMovements(pool, wantedCount, rng, recentIds);
+    var chosenMovements = selectMovements(workingPool, wantedCount, rng, recentIds);
+
+    // A Complex uses one bell/bag for the whole flow — pick a single load
+    // shared by every movement in that equipment category, rather than a
+    // different weight per movement (which you can't do mid-flow).
+    var sharedLoad = null;
+    var sharedLoadInfo = null;
+    if (format.id === "complex") {
+      var anchorMovement = chosenMovements.filter(function (m) {
+        return m.equipment != null;
+      })[0];
+      if (anchorMovement) {
+        sharedLoadInfo = computeLoad(anchorMovement, equipment, intensity, rng);
+        if (sharedLoadInfo) {
+          sharedLoad = { label: anchorMovement.category === "sandbag" ? "sandbag" : "bell", value: sharedLoadInfo.formatted };
+        }
+      }
+    }
 
     var items = chosenMovements.map(function (m) {
+      var isAnchoredEquipment = sharedLoad && m.equipment != null;
+      var loadInfo = isAnchoredEquipment ? sharedLoadInfo : computeLoad(m, equipment, intensity, rng);
+      var dampening = loadInfo ? weightDampening(loadInfo.raw, loadInfo.allWeights) : 1;
       return {
         id: m.id,
         name: m.name,
         scheme: m.scheme,
-        amount: scaleAmount(m, format, intensity, rng),
-        load: movementLoad(m, equipment, intensity, rng),
+        amount: scaleAmount(m, format, intensity, rng, dampening),
+        load: isAnchoredEquipment ? null : loadInfo ? loadInfo.formatted : null,
+        scaleNote: m.scaleNote || null,
       };
     });
+
+    var meta = buildFormatMeta(format, duration, intensity, rng);
+    if (format.id === "complex") {
+      meta.unilateralBothSides = unilateralBothSides;
+    }
 
     var workout = {
       formatId: format.id,
@@ -297,8 +485,9 @@
       formatDescription: format.description,
       duration: duration,
       intensity: intensity,
-      meta: buildFormatMeta(format, duration, intensity, rng),
+      meta: meta,
       movements: items,
+      sharedLoad: sharedLoad,
       seed: seed || null,
     };
 
@@ -315,5 +504,7 @@
     selectMovements: selectMovements,
     selectFormat: selectFormat,
     describeWorkout: describeWorkout,
+    buildComplexPool: buildComplexPool,
+    pickComplexEquipmentCategory: pickComplexEquipmentCategory,
   };
 });

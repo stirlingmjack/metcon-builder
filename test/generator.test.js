@@ -186,4 +186,67 @@ test("Tabata format has no prescribed amount (max-effort intervals)", function (
   assert.ok(found, "expected to encounter a tabata workout within 100 random seeds");
 });
 
+test("Complex format shares one load across every loaded movement", function () {
+  var found = false;
+  for (var i = 0; i < 300 && !found; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "moderate",
+      seed: "complex-shared-" + i,
+    });
+    if (w.formatId === "complex" && w.sharedLoad) {
+      found = true;
+      w.movements.forEach(function (m) {
+        // Individual per-movement load is suppressed in favor of workout.sharedLoad
+        assert.strictEqual(m.load, null);
+      });
+    }
+  }
+  assert.ok(found, "expected to encounter a complex workout with a shared load within 300 seeds");
+});
+
+test("Complex unilateralBothSides only selects movements flagged eachSide", function () {
+  var found = false;
+  for (var i = 0; i < 3000 && !found; i++) {
+    var w = generator.generateWorkout({
+      equipment: DEFAULT_EQUIPMENT,
+      duration: 20,
+      intensity: "hard",
+      seed: "complex-uni-" + i,
+    });
+    if (w.formatId === "complex" && w.meta.unilateralBothSides) {
+      found = true;
+      w.movements.forEach(function (item) {
+        var def = MetconData.MOVEMENTS.filter(function (m) {
+          return m.id === item.id;
+        })[0];
+        assert.strictEqual(def.eachSide, true, item.name + " should be eachSide-capable in a unilateral complex");
+      });
+    }
+  }
+  assert.ok(found, "expected to encounter a unilateral complex within 3000 seeds");
+});
+
+test("Heavier picked weight reduces the rep target (weightDampening)", function () {
+  var weights = [16, 20, 24, 28];
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("fixed-dampening");
+  var movement = { base: [10, 20], scheme: "reps" };
+  var format = { repMultiplier: 1 };
+  var lightVal = generator.scaleAmount(movement, format, "moderate", require(path.join(__dirname, "..", "js", "rng.js")).createRng("d1"), 1);
+  var heavyVal = generator.scaleAmount(movement, format, "moderate", require(path.join(__dirname, "..", "js", "rng.js")).createRng("d1"), 0.65);
+  assert.ok(heavyVal < lightVal, "a dampening factor below 1 should reduce the scaled amount");
+});
+
+test("selectFormat respects FORMAT_WEIGHTS direction (complex/for_time favored over emom/tabata)", function () {
+  var rng = require(path.join(__dirname, "..", "js", "rng.js")).createRng("weights-check");
+  var counts = {};
+  for (var i = 0; i < 4000; i++) {
+    var f = generator.selectFormat(rng, null);
+    counts[f.id] = (counts[f.id] || 0) + 1;
+  }
+  assert.ok(counts.for_time > counts.emom, "for_time should be picked more often than emom");
+  assert.ok(counts.complex > counts.tabata, "complex should be picked more often than tabata");
+});
+
 console.log(passed + " tests passed");
