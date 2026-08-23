@@ -40,6 +40,30 @@
           { code: "D", name: "Finisher", sets: null, reps: null, superset: null, finisher: { format: "amrap", durationMinutes: 8 } },
         ],
       },
+      {
+        id: "day2",
+        name: "Day 2",
+        blocks: [
+          { code: "A", name: "Deadlift", sets: 4, reps: "5", superset: null, finisher: null },
+          { code: "B1", name: "Strict Press", sets: 4, reps: "6", superset: "B", finisher: null },
+          { code: "B2", name: "Pull-ups", sets: 5, reps: "Descending", superset: "B", finisher: null },
+          { code: "C1", name: "Front Squat", sets: 3, reps: "8", superset: "C", finisher: null },
+          { code: "C2", name: "Hamstring Curl", sets: 3, reps: "8", superset: "C", finisher: null },
+          { code: "D", name: "Finisher", sets: null, reps: null, superset: null, finisher: { format: "amrap", durationMinutes: 14 } },
+        ],
+      },
+      {
+        id: "day3",
+        name: "Day 3",
+        blocks: [
+          { code: "A", name: "Hack Squat", sets: 4, reps: "6", superset: null, finisher: null },
+          { code: "B1", name: "DB Bench Press", sets: 4, reps: "10", superset: "B", finisher: null },
+          { code: "B2", name: "Chest Supported Row", sets: 4, reps: "10", superset: "B", finisher: null },
+          { code: "C1", name: "Walking Lunges", sets: 3, reps: "12/leg", superset: "C", finisher: null },
+          { code: "C2", name: "Leg Raises", sets: 3, reps: "12", superset: "C", finisher: null },
+          { code: "D", name: "Finisher", sets: null, reps: null, superset: null, finisher: { format: "emom", durationMinutes: 8 } },
+        ],
+      },
     ],
   };
 
