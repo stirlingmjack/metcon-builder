@@ -83,6 +83,34 @@ but opening the file directly also works in most browsers.)
   custom properties. Re-renders whenever the tab is activated (via the
   `metcon:tab-activated` event `app.js` dispatches on every tab switch),
   so a session just logged on the Strength tab shows up immediately.
+- **`js/adhoc-parser.js`** — pure text-to-structured-workout logic for the
+  Log Workout tab: given freeform "what I did today" text, guesses a
+  format/duration/rounds from header phrasing ("AMRAP 20:", "5 rounds for
+  time:", "EMOM 12 min:"), splits the rest into movement lines (one per
+  line, or comma-separated on a single line), and matches each against
+  the same `MOVEMENTS` library the generator draws from — via the
+  official name, a small synonym table for common gym shorthand ("push
+  ups", "KB swings", "assault bike", ...), or left unmatched (still
+  tracked, just not translated) if nothing fits. Also parses `5x10`-style
+  sets/reps, a trailing weight (`24kg`), and `/side` or `/leg` suffixes,
+  and builds a plain-text summary (`summaryText`) the DOM layer just
+  escapes and displays — no markup-building logic duplicated elsewhere.
+  Best-effort by design, not real NLP; has no DOM dependency, so it's
+  unit-tested directly in Node — see `test/adhoc-parser.test.js`.
+- **`js/adhoc.js`** — wires the Log Workout tab to the DOM: a date field
+  and textarea, a "Translate & Log" button that runs the text through
+  `MetconAdhocParser` and saves the result via `MetconStorage`'s ad hoc
+  functions, and a list of everything logged there so far (each entry
+  deletable). Unlike the Metcon/Strength history — one entry per day,
+  keyed by date — ad hoc entries are a plain growable list, since you
+  might log more than one in a day or backfill an earlier date.
+  Self-contained, same pattern as the other DOM-wiring files.
+
+Ad hoc entries also show up merged into the Metcon tab's own History list
+(tagged with their guessed format, or "Ad hoc" if none was found) —
+`app.js`'s `renderHistory()` combines both sources and re-sorts by date,
+and refreshes on `metcon:tab-activated` so an entry logged on the Log tab
+appears there right away.
 
 ## Customizing your gear
 

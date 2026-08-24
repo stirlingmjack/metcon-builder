@@ -353,46 +353,112 @@
   // History
   // ---------------------------------------------------------------------
 
+  function renderMetconHistoryRow(date, entry) {
+    var w = entry.workout;
+    if (!w) return "";
+    var statusClass = entry.completed ? "history-status done" : "history-status";
+    var statusText = entry.completed ? "✓ " + capitalize(entry.rx || "rx") + (entry.score ? " · " + entry.score : "") : "Not logged";
+    var notesHtml = entry.notes ? '<div class="history-notes">' + escapeHtml(entry.notes) + "</div>" : "";
+    return (
+      '<details class="history-item">' +
+      "<summary>" +
+      '<span class="history-summary-left">' +
+      '<span class="history-date">' +
+      escapeHtml(date) +
+      "</span>" +
+      '<span class="format-badge">' +
+      escapeHtml(w.formatName) +
+      "</span>" +
+      "</span>" +
+      '<span class="' +
+      statusClass +
+      '">' +
+      escapeHtml(statusText) +
+      "</span>" +
+      "</summary>" +
+      '<div class="history-body">' +
+      escapeHtml(w.text) +
+      "</div>" +
+      notesHtml +
+      "</details>"
+    );
+  }
+
+  // Ad hoc entries (from the Log Workout tab) live in their own storage
+  // list, not this date-keyed history — see MetconStorage's adhoc-*
+  // functions — but get merged into this same list for a single combined
+  // timeline, tagged so they're easy to tell apart from a generated one.
+  function renderAdhocHistoryRow(entry) {
+    var lines = (entry.parsed && entry.parsed.lines) || [];
+    var unmatched = lines.filter(function (l) {
+      return !l.matched;
+    }).length;
+    var statusText =
+      lines.length === 0
+        ? "No movements recognized"
+        : unmatched === 0
+        ? lines.length + " movement" + (lines.length === 1 ? "" : "s") + " recognized"
+        : lines.length - unmatched + "/" + lines.length + " movements recognized";
+    return (
+      '<details class="history-item">' +
+      "<summary>" +
+      '<span class="history-summary-left">' +
+      '<span class="history-date">' +
+      escapeHtml(entry.date) +
+      "</span>" +
+      '<span class="format-badge adhoc-badge">' +
+      escapeHtml((entry.parsed && entry.parsed.formatLabel) || "Ad hoc") +
+      "</span>" +
+      "</span>" +
+      '<span class="history-status">' +
+      escapeHtml(statusText) +
+      "</span>" +
+      "</summary>" +
+      '<div class="history-body">' +
+      escapeHtml((entry.parsed && entry.parsed.summaryText) || "") +
+      "</div>" +
+      '<div class="history-notes"><em>Original: </em>' +
+      escapeHtml(entry.rawText || "") +
+      "</div>" +
+      '<button class="btn btn-ghost adhoc-delete-btn" type="button" data-id="' +
+      escapeHtml(entry.id) +
+      '">🗑 Delete</button>' +
+      "</details>"
+    );
+  }
+
   function renderHistory() {
-    var entries = MetconStorage.getAllHistorySorted();
-    if (entries.length === 0) {
+    var metconRows = MetconStorage.getAllHistorySorted()
+      .filter(function (row) {
+        return row.entry && row.entry.workout;
+      })
+      .map(function (row) {
+        return { sortKey: row.date + "|" + (row.entry.savedAt || ""), html: renderMetconHistoryRow(row.date, row.entry) };
+      });
+    var adhocRows = MetconStorage.getAllAdhocHistorySorted().map(function (entry) {
+      return { sortKey: entry.date + "|" + (entry.savedAt || ""), html: renderAdhocHistoryRow(entry) };
+    });
+    var combined = metconRows.concat(adhocRows).sort(function (a, b) {
+      return b.sortKey.localeCompare(a.sortKey);
+    });
+
+    if (combined.length === 0) {
       els.historyList.innerHTML = '<p class="empty-note">No workouts logged yet.</p>';
       return;
     }
 
-    els.historyList.innerHTML = entries
+    els.historyList.innerHTML = combined
       .map(function (row) {
-        var entry = row.entry;
-        var w = entry.workout;
-        if (!w) return "";
-        var statusClass = entry.completed ? "history-status done" : "history-status";
-        var statusText = entry.completed ? "✓ " + capitalize(entry.rx || "rx") + (entry.score ? " · " + entry.score : "") : "Not logged";
-        var notesHtml = entry.notes ? '<div class="history-notes">' + escapeHtml(entry.notes) + "</div>" : "";
-        return (
-          "<details class=\"history-item\">" +
-          "<summary>" +
-          '<span class="history-summary-left">' +
-          '<span class="history-date">' +
-          escapeHtml(row.date) +
-          "</span>" +
-          '<span class="format-badge">' +
-          escapeHtml(w.formatName) +
-          "</span>" +
-          "</span>" +
-          '<span class="' +
-          statusClass +
-          '">' +
-          escapeHtml(statusText) +
-          "</span>" +
-          "</summary>" +
-          '<div class="history-body">' +
-          escapeHtml(w.text) +
-          "</div>" +
-          notesHtml +
-          "</details>"
-        );
+        return row.html;
       })
       .join("");
+
+    Array.prototype.forEach.call(els.historyList.querySelectorAll(".adhoc-delete-btn"), function (btn) {
+      btn.addEventListener("click", function () {
+        MetconStorage.deleteAdhocEntry(btn.getAttribute("data-id"));
+        renderHistory();
+      });
+    });
   }
 
   // ---------------------------------------------------------------------
@@ -422,7 +488,7 @@
   // regardless of which is visible (see strength.js), so switching is
   // just a visibility/aria toggle, nothing to (re)generate on click.
   function initTabs() {
-    var tabs = ["metcon", "strength", "progress"]
+    var tabs = ["metcon", "strength", "progress", "log"]
       .map(function (name) {
         return {
           name: name,
@@ -469,6 +535,11 @@
     });
 
     initTabs();
+    // An ad hoc entry logged on the Log Workout tab merges into this
+    // tab's History — refresh it whenever we're switched back to.
+    document.addEventListener("metcon:tab-activated", function (e) {
+      if (e.detail && e.detail.tab === "metcon") renderHistory();
+    });
 
     els.settingsForm.addEventListener("submit", function (e) {
       e.preventDefault();

@@ -11,6 +11,7 @@
   var STRENGTH_SETTINGS_KEY = "metcon.strengthSettings.v1";
   var STRENGTH_HISTORY_KEY = "metcon.strengthHistory.v1";
   var STRENGTH_MAXES_KEY = "metcon.strengthMaxes.v1";
+  var ADHOC_HISTORY_KEY = "metcon.adhocHistory.v1";
 
   function safeParse(json, fallback) {
     if (!json) return fallback;
@@ -188,6 +189,48 @@
     return getAllHistorySortedFrom(STRENGTH_HISTORY_KEY);
   }
 
+  // ---- ad hoc workout log ------------------------------------------------
+  // Unlike the date-keyed Metcon/Strength history (one entry per day), ad
+  // hoc entries are a plain growable list — you might log more than one
+  // in a day, or backfill an earlier date — each with its own id:
+  // { id, date, rawText, parsed: {formatId, formatLabel, durationMinutes,
+  //   rounds, lines: [...]}, notes, savedAt }
+
+  function loadAdhocHistory() {
+    var list = safeParse(localStorage.getItem(ADHOC_HISTORY_KEY), []);
+    return Array.isArray(list) ? list : [];
+  }
+
+  function saveAdhocHistoryList(list) {
+    localStorage.setItem(ADHOC_HISTORY_KEY, JSON.stringify(list));
+  }
+
+  function addAdhocEntry(entry) {
+    var list = loadAdhocHistory();
+    var withMeta = Object.assign({}, entry, {
+      id: "adhoc-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
+      savedAt: new Date().toISOString(),
+    });
+    list.push(withMeta);
+    saveAdhocHistoryList(list);
+    return withMeta;
+  }
+
+  function deleteAdhocEntry(id) {
+    var list = loadAdhocHistory().filter(function (e) {
+      return e.id !== id;
+    });
+    saveAdhocHistoryList(list);
+  }
+
+  function getAllAdhocHistorySorted() {
+    return loadAdhocHistory()
+      .slice()
+      .sort(function (a, b) {
+        return (b.date || "").localeCompare(a.date || "") || (b.savedAt || "").localeCompare(a.savedAt || "");
+      });
+  }
+
   root.MetconStorage = {
     todayKey: todayKey,
     loadSettings: loadSettings,
@@ -206,5 +249,8 @@
     saveStrengthEntry: saveStrengthEntry,
     getStrengthEntry: getStrengthEntry,
     getAllStrengthHistorySorted: getAllStrengthHistorySorted,
+    addAdhocEntry: addAdhocEntry,
+    deleteAdhocEntry: deleteAdhocEntry,
+    getAllAdhocHistorySorted: getAllAdhocHistorySorted,
   };
 })(typeof window !== "undefined" ? window : this);

@@ -154,6 +154,7 @@ h2 {
 }
 
 .field-row input[type="text"],
+.field-row input[type="date"],
 .field-row select,
 .field-row textarea {
   background: var(--input-bg);
@@ -659,6 +660,29 @@ legend {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* --- Log Workout tab --------------------------------------------------- */
+
+#log-tab-panel .field-row {
+  margin-bottom: 12px;
+}
+
+#adhoc-text {
+  min-height: 140px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.validation-msg {
+  color: var(--warn);
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.adhoc-badge {
+  background: var(--ok);
+  color: #0c1e15;
 }
 
 @media (max-width: 480px) {

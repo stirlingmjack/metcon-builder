@@ -29,6 +29,9 @@
       <button class="tab-btn" id="tab-btn-progress" type="button" role="tab" aria-selected="false" aria-controls="progress-tab-panel">
         Progress
       </button>
+      <button class="tab-btn" id="tab-btn-log" type="button" role="tab" aria-selected="false" aria-controls="log-tab-panel">
+        Log Workout
+      </button>
     </nav>
 
     <section id="settings-panel" class="panel settings-panel hidden">
@@ -222,6 +225,36 @@
     <div id="progress-tab-panel" class="hidden">
       <div id="progress-lifts"></div>
     </div>
+
+    <div id="log-tab-panel" class="hidden">
+      <section class="panel">
+        <h2>Log an ad hoc workout</h2>
+        <p class="type-hint">
+          Didn't use the generator today? Type or paste what you did — movements it recognizes get translated into a
+          structured entry and tracked right alongside your generated workouts, in History on the Metcon tab.
+        </p>
+        <label class="field-row inline">
+          Date
+          <input type="date" id="adhoc-date" />
+        </label>
+        <label class="field-row">
+          What you did
+          <textarea
+            id="adhoc-text"
+            rows="8"
+            placeholder="e.g.&#10;5 rounds:&#10;10 burpees&#10;15 KB swings 24kg&#10;20 air squats"
+          ></textarea>
+        </label>
+        <button id="adhoc-save-btn" class="btn btn-primary" type="button">Translate &amp; Log</button>
+        <span id="adhoc-saved-msg" class="saved-msg hidden">Saved.</span>
+        <p id="adhoc-validation-msg" class="validation-msg hidden"></p>
+      </section>
+
+      <section class="panel history-panel">
+        <h2>Your ad hoc logs</h2>
+        <div id="adhoc-list" class="history-list"></div>
+      </section>
+    </div>
   </div>
 
   <script src="js/data.js"></script>
@@ -229,8 +262,10 @@
   <script src="js/generator.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/strength-data.js"></script>
+  <script src="js/adhoc-parser.js"></script>
   <script src="js/app.js"></script>
   <script src="js/strength.js"></script>
   <script src="js/progress.js"></script>
+  <script src="js/adhoc.js"></script>
 </body>
 </html>
