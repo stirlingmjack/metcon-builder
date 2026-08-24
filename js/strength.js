@@ -1,18 +1,24 @@
 /**
  * strength.js — Strength tab: renders the day's lettered blocks (with
- * supersets grouped), logs weight/reps per set, and generates the D-block
+ * supersets grouped), logs weight/reps per set, generates the D-block
  * finisher via MetconGenerator using the same equipment/settings as the
- * Metcon tab. Self-contained (own DOMContentLoaded, own small helpers) —
- * only depends on the already-loaded MetconStrengthData / MetconGenerator
- * / MetconStorage globals.
+ * Metcon tab, and drives the 8-week "Easy Strength" progression for each
+ * day's main lift (WEEK_SCHEMES in strength-data.js) using the stored
+ * 1RMs to suggest a weight. Self-contained (own DOMContentLoaded, own
+ * small helpers) — only depends on the already-loaded MetconStrengthData
+ * / MetconGenerator / MetconStorage globals.
  */
 (function () {
   "use strict";
 
   var PROGRAM = MetconStrengthData.STRENGTH_PROGRAM;
+  var MAIN_LIFTS = MetconStrengthData.MAIN_LIFTS;
+  var WEEK_SCHEMES = MetconStrengthData.WEEK_SCHEMES;
 
   var els = {
     daySelect: document.getElementById("strength-day-select"),
+    weekSelect: document.getElementById("strength-week-select"),
+    maxesGrid: document.getElementById("maxes-grid"),
     blocksContainer: document.getElementById("strength-blocks"),
     logCompleted: document.getElementById("strength-log-completed"),
     logNotes: document.getElementById("strength-log-notes"),
@@ -40,12 +46,20 @@
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   }
 
+  function roundToNearest(val, step) {
+    return Math.round(val / step) * step;
+  }
+
   function findDay(dayId) {
     return (
       PROGRAM.days.filter(function (d) {
         return d.id === dayId;
       })[0] || PROGRAM.days[0]
     );
+  }
+
+  function schemeForWeek(weekNumber) {
+    return WEEK_SCHEMES[weekNumber - 1] || WEEK_SCHEMES[0];
   }
 
   // Groups consecutive blocks that share a `superset` id together, so
@@ -69,10 +83,6 @@
     return groups;
   }
 
-  function targetLabel(block) {
-    return block.sets + " × " + block.reps;
-  }
-
   function generateFinisher(block, seedSuffix) {
     var settings = MetconStorage.loadSettings();
     var seed = todayKey + ":" + block.code + (seedSuffix ? ":" + seedSuffix : "");
@@ -85,9 +95,9 @@
     });
   }
 
-  function liftBlockHtml(block, savedSets) {
+  function renderSetRows(block, savedSets, rowSpecs) {
     var rows = "";
-    for (var i = 0; i < block.sets; i++) {
+    rowSpecs.forEach(function (spec, i) {
       var saved = (savedSets && savedSets[i]) || {};
       rows +=
         '<div class="strength-set-row">' +
@@ -98,18 +108,50 @@
         block.code +
         '" data-set-index="' +
         i +
-        '" placeholder="kg" value="' +
+        '" placeholder="' +
+        escapeHtml(spec.weightPlaceholder) +
+        '" value="' +
         escapeHtml(saved.weight || "") +
         '" />' +
         '<input type="text" inputmode="numeric" class="set-reps" data-block="' +
         block.code +
         '" data-set-index="' +
         i +
-        '" placeholder="reps" value="' +
+        '" placeholder="' +
+        escapeHtml(spec.repsPlaceholder) +
+        '" value="' +
         escapeHtml(saved.reps || "") +
         '" />' +
         "</div>";
+    });
+    return rows;
+  }
+
+  // A fixed lift just repeats "kg"/"reps" placeholders `sets` times. A
+  // progressesWithWeek lift pulls its set/rep shape and %1RM from the
+  // current week's scheme, and — if a 1RM is on file for it — suggests a
+  // weight (rounded to the nearest 2.5kg plate).
+  function liftBlockHtml(block, savedSets, weekNumber, maxes) {
+    var targetText, note, rowSpecs;
+
+    if (block.progressesWithWeek) {
+      var scheme = schemeForWeek(weekNumber);
+      var oneRepMax = maxes && maxes[block.liftKey];
+      var suggested = oneRepMax ? roundToNearest((oneRepMax * scheme.percent) / 100, 2.5) : null;
+      targetText = "Week " + scheme.week + " · " + scheme.label + " @ " + scheme.percent + "%" + (suggested ? " (~" + suggested + " kg)" : "");
+      note = scheme.isTest
+        ? "Easy Strength test week — work up toward a heavy single for the day."
+        : "Easy Strength: same 6-10 total reps at high intensity, different shape each week.";
+      rowSpecs = scheme.setReps.map(function (reps) {
+        return { repsPlaceholder: String(reps), weightPlaceholder: suggested ? suggested + " kg" : "kg" };
+      });
+    } else {
+      targetText = block.sets + " × " + block.reps;
+      note = null;
+      rowSpecs = [];
+      for (var i = 0; i < block.sets; i++) rowSpecs.push({ repsPlaceholder: "reps", weightPlaceholder: "kg" });
     }
+
     return (
       '<div class="strength-block" data-code="' +
       block.code +
@@ -122,11 +164,12 @@
       escapeHtml(block.name) +
       "</span>" +
       '<span class="strength-block-target">' +
-      escapeHtml(targetLabel(block)) +
+      escapeHtml(targetText) +
       "</span>" +
       "</div>" +
+      (note ? '<div class="strength-block-note">' + escapeHtml(note) + "</div>" : "") +
       '<div class="strength-sets">' +
-      rows +
+      renderSetRows(block, savedSets, rowSpecs) +
       "</div>" +
       "</div>"
     );
@@ -188,12 +231,13 @@
     );
   }
 
-  function renderDay(dayId, existingEntry) {
+  function renderDay(dayId, weekNumber, existingEntry) {
     var day = findDay(dayId);
-    var entryMatchesDay = existingEntry && existingEntry.dayId === dayId;
-    var savedSets = (entryMatchesDay && existingEntry.sets) || {};
-    var savedScores = (entryMatchesDay && existingEntry.finisherScores) || {};
-    var savedFinishers = (entryMatchesDay && existingEntry.finishers) || {};
+    var entryMatches = existingEntry && existingEntry.dayId === dayId && existingEntry.weekNumber === weekNumber;
+    var savedSets = (entryMatches && existingEntry.sets) || {};
+    var savedScores = (entryMatches && existingEntry.finisherScores) || {};
+    var savedFinishers = (entryMatches && existingEntry.finishers) || {};
+    var maxes = MetconStorage.loadStrengthMaxes();
 
     finisherWorkouts = {};
     var groups = groupBlocks(day.blocks);
@@ -206,7 +250,7 @@
               var workout = savedFinishers[block.code] || generateFinisher(block);
               return finisherBlockHtml(block, workout, savedScores[block.code]);
             }
-            return liftBlockHtml(block, savedSets[block.code]);
+            return liftBlockHtml(block, savedSets[block.code], weekNumber, maxes);
           })
           .join("");
         if (group.length > 1) {
@@ -256,7 +300,20 @@
     });
   }
 
-  function readEntryFromForm(dayId) {
+  function currentWeekNumber() {
+    return parseInt(els.weekSelect.value, 10) || 1;
+  }
+
+  // Re-renders the currently selected day/week from whatever's saved for
+  // today (or blank, if nothing matches) — used whenever Day, Week, or a
+  // 1RM changes.
+  function rerenderCurrentDay() {
+    var freshExisting = MetconStorage.getStrengthEntry(todayKey);
+    renderDay(els.daySelect.value, currentWeekNumber(), freshExisting);
+    wireRegenerateButtons();
+  }
+
+  function readEntryFromForm(dayId, weekNumber) {
     var sets = {};
     Array.prototype.forEach.call(els.blocksContainer.querySelectorAll(".strength-block[data-code]"), function (blockEl) {
       var code = blockEl.getAttribute("data-code");
@@ -277,6 +334,7 @@
 
     return {
       dayId: dayId,
+      weekNumber: weekNumber,
       sets: sets,
       finishers: finisherWorkouts,
       finisherScores: finisherScores,
@@ -293,6 +351,45 @@
       .join("");
   }
 
+  function populateWeekSelect() {
+    els.weekSelect.innerHTML = WEEK_SCHEMES.map(function (w) {
+      return '<option value="' + w.week + '">Week ' + w.week + (w.isTest ? " (Test)" : "") + "</option>";
+    }).join("");
+  }
+
+  function renderMaxesGrid() {
+    var maxes = MetconStorage.loadStrengthMaxes();
+    els.maxesGrid.innerHTML = MAIN_LIFTS.map(function (lift) {
+      var val = maxes[lift.id];
+      return (
+        '<label class="field-row">' +
+        escapeHtml(lift.label) +
+        '<input type="text" inputmode="decimal" class="max-input" data-lift="' +
+        lift.id +
+        '" placeholder="e.g. 100" value="' +
+        (val != null ? escapeHtml(String(val)) : "") +
+        '" />' +
+        "</label>"
+      );
+    }).join("");
+
+    Array.prototype.forEach.call(els.maxesGrid.querySelectorAll(".max-input"), function (input) {
+      input.addEventListener("change", function () {
+        var m = MetconStorage.loadStrengthMaxes();
+        var liftKey = input.getAttribute("data-lift");
+        var raw = input.value.trim();
+        if (raw === "") {
+          delete m[liftKey];
+        } else {
+          var val = parseFloat(raw);
+          if (!isNaN(val) && val > 0) m[liftKey] = val;
+        }
+        MetconStorage.saveStrengthMaxes(m);
+        rerenderCurrentDay(); // suggested weights depend on maxes
+      });
+    });
+  }
+
   function renderHistory() {
     var entries = MetconStorage.getAllStrengthHistorySorted();
     if (entries.length === 0) {
@@ -305,6 +402,7 @@
         var day = findDay(entry.dayId);
         var statusClass = entry.completed ? "history-status done" : "history-status";
         var statusText = entry.completed ? "✓ Completed" : "Not logged";
+        var weekLabel = entry.weekNumber ? "Week " + entry.weekNumber : "";
 
         var setsSummary = Object.keys(entry.sets || {})
           .map(function (code) {
@@ -344,6 +442,7 @@
           '<span class="format-badge">' +
           escapeHtml(day.name) +
           "</span>" +
+          (weekLabel ? '<span class="format-badge">' + escapeHtml(weekLabel) + "</span>" : "") +
           "</span>" +
           '<span class="' +
           statusClass +
@@ -360,9 +459,10 @@
   }
 
   function saveSession() {
-    var entry = readEntryFromForm(els.daySelect.value);
+    var weekNumber = currentWeekNumber();
+    var entry = readEntryFromForm(els.daySelect.value, weekNumber);
     MetconStorage.saveStrengthEntry(todayKey, entry);
-    MetconStorage.saveStrengthSettings({ dayId: els.daySelect.value });
+    MetconStorage.saveStrengthSettings({ dayId: els.daySelect.value, weekNumber: weekNumber });
     els.logSavedMsg.classList.remove("hidden");
     setTimeout(function () {
       els.logSavedMsg.classList.add("hidden");
@@ -372,14 +472,19 @@
 
   function init() {
     populateDaySelect();
+    populateWeekSelect();
+    renderMaxesGrid();
 
     var existing = MetconStorage.getStrengthEntry(todayKey);
     var strengthSettings = MetconStorage.loadStrengthSettings();
     var startingDayId = (existing && existing.dayId) || strengthSettings.dayId || PROGRAM.days[0].id;
     if (!findDay(startingDayId)) startingDayId = PROGRAM.days[0].id;
+    var startingWeek = (existing && existing.weekNumber) || strengthSettings.weekNumber || 1;
+    if (startingWeek < 1 || startingWeek > WEEK_SCHEMES.length) startingWeek = 1;
 
     els.daySelect.value = startingDayId;
-    renderDay(startingDayId, existing);
+    els.weekSelect.value = String(startingWeek);
+    renderDay(startingDayId, startingWeek, existing);
     wireRegenerateButtons();
 
     if (existing) {
@@ -387,11 +492,17 @@
       els.logNotes.value = existing.notes || "";
     }
 
+    function persistDayWeekChoice() {
+      MetconStorage.saveStrengthSettings({ dayId: els.daySelect.value, weekNumber: currentWeekNumber() });
+    }
+
     els.daySelect.addEventListener("change", function () {
-      var freshExisting = MetconStorage.getStrengthEntry(todayKey);
-      renderDay(els.daySelect.value, freshExisting);
-      wireRegenerateButtons();
-      MetconStorage.saveStrengthSettings({ dayId: els.daySelect.value });
+      rerenderCurrentDay();
+      persistDayWeekChoice();
+    });
+    els.weekSelect.addEventListener("change", function () {
+      rerenderCurrentDay();
+      persistDayWeekChoice();
     });
 
     els.logSaveBtn.addEventListener("click", saveSession);

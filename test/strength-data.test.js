@@ -7,6 +7,8 @@ var path = require("path");
 
 var strengthData = require(path.join(__dirname, "..", "js", "strength-data.js"));
 var PROGRAM = strengthData.STRENGTH_PROGRAM;
+var MAIN_LIFTS = strengthData.MAIN_LIFTS;
+var WEEK_SCHEMES = strengthData.WEEK_SCHEMES;
 
 var passed = 0;
 function test(name, fn) {
@@ -34,16 +36,55 @@ test("every block has a code and a name", function () {
   });
 });
 
-test("a block is either a logged lift (sets+reps) or a finisher, never both/neither", function () {
+test("a block is exactly one of: fixed lift (sets+reps), finisher, or progressesWithWeek", function () {
+  var liftIds = MAIN_LIFTS.map(function (l) {
+    return l.id;
+  });
   PROGRAM.days.forEach(function (day) {
     day.blocks.forEach(function (b) {
-      var isLift = b.sets != null && b.reps != null;
+      var isFixedLift = b.sets != null && b.reps != null;
       var isFinisher = b.finisher != null;
-      assert.notStrictEqual(isLift, isFinisher, "block " + b.code + " in " + day.id + " must be exactly one of lift/finisher");
-      if (isLift) {
+      var isProgressive = b.progressesWithWeek === true;
+      var kindCount = [isFixedLift, isFinisher, isProgressive].filter(Boolean).length;
+      assert.strictEqual(kindCount, 1, "block " + b.code + " in " + day.id + " must be exactly one of fixed-lift/finisher/progressive, got " + kindCount);
+      if (isFixedLift) {
         assert.ok(typeof b.sets === "number" && b.sets > 0, b.code + " sets should be a positive number");
       }
+      if (isProgressive) {
+        assert.ok(liftIds.indexOf(b.liftKey) !== -1, b.code + " in " + day.id + " has an unknown liftKey: " + b.liftKey);
+        assert.strictEqual(b.sets, null, b.code + " progressesWithWeek blocks should not also have a fixed sets count");
+      }
     });
+  });
+});
+
+test("every MAIN_LIFTS entry is used by exactly one progressesWithWeek block", function () {
+  var usage = {};
+  PROGRAM.days.forEach(function (day) {
+    day.blocks.forEach(function (b) {
+      if (b.progressesWithWeek) usage[b.liftKey] = (usage[b.liftKey] || 0) + 1;
+    });
+  });
+  MAIN_LIFTS.forEach(function (lift) {
+    assert.strictEqual(usage[lift.id], 1, lift.id + " should be used by exactly one progressesWithWeek block, used by " + (usage[lift.id] || 0));
+  });
+});
+
+test("WEEK_SCHEMES has 8 sequential weeks with ascending %1RM, each totaling roughly 6-10 reps (test week may run lower)", function () {
+  assert.strictEqual(WEEK_SCHEMES.length, 8);
+  WEEK_SCHEMES.forEach(function (w, idx) {
+    assert.strictEqual(w.week, idx + 1, "WEEK_SCHEMES should be in week order");
+    assert.ok(Array.isArray(w.setReps) && w.setReps.length > 0, "week " + w.week + " needs a non-empty setReps");
+    assert.ok(w.percent > 0 && w.percent <= 100, "week " + w.week + " percent should be a sane %1RM");
+    var totalReps = w.setReps.reduce(function (a, b) {
+      return a + b;
+    }, 0);
+    if (!w.isTest) {
+      assert.ok(totalReps >= 5 && totalReps <= 11, "week " + w.week + " total reps (" + totalReps + ") should be roughly in the 6-10 range");
+    }
+    if (idx > 0) {
+      assert.ok(w.percent >= WEEK_SCHEMES[idx - 1].percent, "percent should not decrease week over week (week " + w.week + ")");
+    }
   });
 });
 

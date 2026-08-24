@@ -387,6 +387,34 @@ legend {
 
 /* --- Strength tab ------------------------------------------------------ */
 
+.maxes-panel .type-hint {
+  margin-top: -4px;
+  margin-bottom: 14px;
+}
+
+.maxes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.maxes-grid .field-row input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (max-width: 480px) {
+  .maxes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strength-block-note {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  font-style: italic;
+  margin: -6px 0 10px;
+}
+
 .strength-block {
   background: var(--panel-2);
   border: 1px solid var(--panel-border);

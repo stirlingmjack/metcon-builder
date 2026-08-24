@@ -10,6 +10,7 @@
   var HISTORY_KEY = "metcon.history.v1";
   var STRENGTH_SETTINGS_KEY = "metcon.strengthSettings.v1";
   var STRENGTH_HISTORY_KEY = "metcon.strengthHistory.v1";
+  var STRENGTH_MAXES_KEY = "metcon.strengthMaxes.v1";
 
   function safeParse(json, fallback) {
     if (!json) return fallback;
@@ -144,17 +145,30 @@
     return getAllHistorySortedFrom(HISTORY_KEY);
   }
 
-  // ---- strength settings (currently just "which day was last picked") --
+  // ---- strength settings (last-picked day + week in the 8-week block) --
 
   function loadStrengthSettings() {
-    var defaults = { dayId: null };
+    var defaults = { dayId: null, weekNumber: 1 };
     var stored = safeParse(localStorage.getItem(STRENGTH_SETTINGS_KEY), null);
     if (!stored) return defaults;
-    return { dayId: stored.dayId || defaults.dayId };
+    return {
+      dayId: stored.dayId || defaults.dayId,
+      weekNumber: stored.weekNumber || defaults.weekNumber,
+    };
   }
 
   function saveStrengthSettings(settings) {
     localStorage.setItem(STRENGTH_SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  // ---- strength 1RMs (used to suggest weight for the week's %1RM) ------
+
+  function loadStrengthMaxes() {
+    return safeParse(localStorage.getItem(STRENGTH_MAXES_KEY), {});
+  }
+
+  function saveStrengthMaxes(maxes) {
+    localStorage.setItem(STRENGTH_MAXES_KEY, JSON.stringify(maxes));
   }
 
   // ---- strength history --------------------------------------------------
@@ -187,6 +201,8 @@
     getAllHistorySorted: getAllHistorySorted,
     loadStrengthSettings: loadStrengthSettings,
     saveStrengthSettings: saveStrengthSettings,
+    loadStrengthMaxes: loadStrengthMaxes,
+    saveStrengthMaxes: saveStrengthMaxes,
     saveStrengthEntry: saveStrengthEntry,
     getStrengthEntry: getStrengthEntry,
     getAllStrengthHistorySorted: getAllStrengthHistorySorted,
