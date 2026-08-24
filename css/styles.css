@@ -7,6 +7,7 @@
   --accent: #ff6a3d;
   --accent-dim: #7a3520;
   --ok: #4caf7d;
+  --warn: #ffb4a1;
   --input-bg: #10141a;
   --radius: 10px;
 }
@@ -531,6 +532,133 @@ legend {
 
 .finisher-score-row {
   margin-top: 10px;
+}
+
+/* --- Progress tab ------------------------------------------------------ */
+
+.progress-lift-card {
+  margin-bottom: 16px;
+}
+
+.progress-stats {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.progress-latest {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.progress-delta {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.progress-delta.up {
+  color: var(--ok);
+}
+
+.progress-delta.down {
+  color: var(--warn);
+}
+
+.progress-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 4px 0 10px;
+  overflow: visible;
+}
+
+.progress-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.progress-area {
+  stroke: none;
+}
+
+.progress-grid-line {
+  stroke: var(--panel-border);
+  stroke-width: 1;
+}
+
+.progress-axis-text {
+  fill: var(--text-dim);
+  font-size: 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.progress-1rm-line {
+  stroke: var(--text-dim);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.progress-1rm-label {
+  fill: var(--text-dim);
+  font-size: 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.progress-point {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.progress-point-emphasis {
+  fill: var(--accent);
+}
+
+.progress-point-label {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.progress-table-details {
+  margin-top: 4px;
+}
+
+.progress-table-details summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.progress-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.progress-table th,
+.progress-table td {
+  text-align: left;
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px dashed var(--panel-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 @media (max-width: 480px) {

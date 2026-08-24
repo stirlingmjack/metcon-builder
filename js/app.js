@@ -422,27 +422,36 @@
   // regardless of which is visible (see strength.js), so switching is
   // just a visibility/aria toggle, nothing to (re)generate on click.
   function initTabs() {
-    var tabMetcon = document.getElementById("tab-btn-metcon");
-    var tabStrength = document.getElementById("tab-btn-strength");
-    var panelMetcon = document.getElementById("metcon-tab-panel");
-    var panelStrength = document.getElementById("strength-tab-panel");
-    if (!tabMetcon || !tabStrength || !panelMetcon || !panelStrength) return;
+    var tabs = ["metcon", "strength", "progress"]
+      .map(function (name) {
+        return {
+          name: name,
+          btn: document.getElementById("tab-btn-" + name),
+          panel: document.getElementById(name + "-tab-panel"),
+        };
+      })
+      .filter(function (t) {
+        return t.btn && t.panel;
+      });
+    if (tabs.length === 0) return;
 
-    function activate(tab) {
-      var metconActive = tab === "metcon";
-      tabMetcon.classList.toggle("active", metconActive);
-      tabStrength.classList.toggle("active", !metconActive);
-      tabMetcon.setAttribute("aria-selected", String(metconActive));
-      tabStrength.setAttribute("aria-selected", String(!metconActive));
-      panelMetcon.classList.toggle("hidden", !metconActive);
-      panelStrength.classList.toggle("hidden", metconActive);
+    function activate(name) {
+      tabs.forEach(function (t) {
+        var isActive = t.name === name;
+        t.btn.classList.toggle("active", isActive);
+        t.btn.setAttribute("aria-selected", String(isActive));
+        t.panel.classList.toggle("hidden", !isActive);
+      });
+      // Data logged on another tab (e.g. a Strength session just saved)
+      // may affect this one — let it refresh itself on activation instead
+      // of only ever rendering once at page load.
+      document.dispatchEvent(new CustomEvent("metcon:tab-activated", { detail: { tab: name } }));
     }
 
-    tabMetcon.addEventListener("click", function () {
-      activate("metcon");
-    });
-    tabStrength.addEventListener("click", function () {
-      activate("strength");
+    tabs.forEach(function (t) {
+      t.btn.addEventListener("click", function () {
+        activate(t.name);
+      });
     });
     activate("metcon");
   }

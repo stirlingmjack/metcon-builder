@@ -26,6 +26,9 @@
       <button class="tab-btn" id="tab-btn-strength" type="button" role="tab" aria-selected="false" aria-controls="strength-tab-panel">
         Strength
       </button>
+      <button class="tab-btn" id="tab-btn-progress" type="button" role="tab" aria-selected="false" aria-controls="progress-tab-panel">
+        Progress
+      </button>
     </nav>
 
     <section id="settings-panel" class="panel settings-panel hidden">
@@ -215,6 +218,10 @@
         <div id="strength-history-list" class="history-list"></div>
       </section>
     </div>
+
+    <div id="progress-tab-panel" class="hidden">
+      <div id="progress-lifts"></div>
+    </div>
   </div>
 
   <script src="js/data.js"></script>
@@ -224,5 +231,6 @@
   <script src="js/strength-data.js"></script>
   <script src="js/app.js"></script>
   <script src="js/strength.js"></script>
+  <script src="js/progress.js"></script>
 </body>
 </html>

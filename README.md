@@ -72,6 +72,17 @@ but opening the file directly also works in most browsers.)
   tab (refreshing it if you change equipment mid-session), and keeps its
   own history (now tagged with both day and week). Self-contained — only
   depends on the already-loaded globals, same as `app.js`.
+- **`js/progress.js`** — the Progress tab: for each `MAIN_LIFTS` entry,
+  pulls every logged Strength session, takes the heaviest valid weight
+  logged for that lift each session, and renders it as an inline-SVG line
+  chart (one chart per lift — their weight scales aren't comparable, so
+  no combined chart) with a dashed reference line at the stored 1RM if
+  set, a stat line (latest weight + change since the first session), and
+  a "View as table" fallback. No chart library — the SVG is hand-built
+  (`renderChartSvg`) and themed entirely through the app's existing CSS
+  custom properties. Re-renders whenever the tab is activated (via the
+  `metcon:tab-activated` event `app.js` dispatches on every tab switch),
+  so a session just logged on the Strength tab shows up immediately.
 
 ## Customizing your gear
 
