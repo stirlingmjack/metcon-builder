@@ -12,6 +12,7 @@
   var STRENGTH_HISTORY_KEY = "metcon.strengthHistory.v1";
   var STRENGTH_MAXES_KEY = "metcon.strengthMaxes.v1";
   var ADHOC_HISTORY_KEY = "metcon.adhocHistory.v1";
+  var PLAN_KEY = "metcon.plans.v1";
 
   function safeParse(json, fallback) {
     if (!json) return fallback;
@@ -91,6 +92,12 @@
       .map(function (k) {
         return { date: k, entry: history[k] };
       });
+  }
+
+  function deleteHistoryEntryFrom(key, dateKey) {
+    var history = loadHistoryFrom(key);
+    delete history[dateKey];
+    saveHistoryTo(key, history);
   }
 
   function loadHistory() {
@@ -189,6 +196,10 @@
     return getAllHistorySortedFrom(STRENGTH_HISTORY_KEY);
   }
 
+  function loadStrengthHistory() {
+    return loadHistoryFrom(STRENGTH_HISTORY_KEY);
+  }
+
   // ---- ad hoc workout log ------------------------------------------------
   // Unlike the date-keyed Metcon/Strength history (one entry per day), ad
   // hoc entries are a plain growable list — you might log more than one
@@ -231,6 +242,30 @@
       });
   }
 
+  // ---- planned workouts (Calendar tab) -----------------------------------
+  // Date-keyed, same shape family as history: "YYYY-MM-DD" -> { type:
+  // "metcon"|"strength"|"rest", metcon: {duration, intensity, type} |
+  // null, strength: {dayId, weekNumber} | null, notes, savedAt }. A plan
+  // is a lightweight statement of intent for a date — the Metcon/Strength
+  // tabs read today's plan (if any) to pre-fill themselves, but nothing
+  // here locks in an actual generated workout ahead of time.
+
+  function loadPlans() {
+    return loadHistoryFrom(PLAN_KEY);
+  }
+
+  function savePlan(dateKey, plan) {
+    return saveHistoryEntryTo(PLAN_KEY, dateKey, plan);
+  }
+
+  function getPlan(dateKey) {
+    return getEntryFrom(PLAN_KEY, dateKey);
+  }
+
+  function deletePlan(dateKey) {
+    deleteHistoryEntryFrom(PLAN_KEY, dateKey);
+  }
+
   root.MetconStorage = {
     todayKey: todayKey,
     loadSettings: loadSettings,
@@ -249,8 +284,13 @@
     saveStrengthEntry: saveStrengthEntry,
     getStrengthEntry: getStrengthEntry,
     getAllStrengthHistorySorted: getAllStrengthHistorySorted,
+    loadStrengthHistory: loadStrengthHistory,
     addAdhocEntry: addAdhocEntry,
     deleteAdhocEntry: deleteAdhocEntry,
     getAllAdhocHistorySorted: getAllAdhocHistorySorted,
+    loadPlans: loadPlans,
+    savePlan: savePlan,
+    getPlan: getPlan,
+    deletePlan: deletePlan,
   };
 })(typeof window !== "undefined" ? window : this);

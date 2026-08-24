@@ -107,6 +107,19 @@
     }
   }
 
+  // Pre-fills the Duration/Intensity/Type controls from a Calendar-tab
+  // plan for today, before the first-paint deterministic generation runs
+  // — so "auto-apply" just means "the controls already reflect the plan"
+  // rather than any special-cased generation path.
+  function applyPlanToControls(planMetcon) {
+    if (planMetcon.duration) els.ctrlDuration.value = String(planMetcon.duration);
+    if (planMetcon.intensity) els.ctrlIntensity.value = planMetcon.intensity;
+    updateTypeOptionsAvailability();
+    var storedType = planMetcon.type || "";
+    var storedOption = els.ctrlType.querySelector('option[value="' + storedType + '"]');
+    els.ctrlType.value = storedOption && !storedOption.disabled ? storedType : "";
+  }
+
   function readSettingsFromForm() {
     return {
       equipment: {
@@ -185,6 +198,17 @@
 
   function renderError(message) {
     els.workoutCard.innerHTML = '<div class="error-box">' + escapeHtml(message) + "</div>";
+  }
+
+  // Shown instead of a generated workout when today is planned as a rest
+  // day (see the Calendar tab) — a suggestion, not a lock: Generate still
+  // works normally if you change your mind.
+  function renderRestDay() {
+    els.workoutCard.innerHTML =
+      '<div class="rest-day-card">' +
+      "<strong>🛌 Rest day planned for today.</strong>" +
+      '<p>Hit <span class="rest-day-hint">Generate</span> below if you change your mind.</p>' +
+      "</div>";
   }
 
   var SCORE_LABELS = {
@@ -488,7 +512,7 @@
   // regardless of which is visible (see strength.js), so switching is
   // just a visibility/aria toggle, nothing to (re)generate on click.
   function initTabs() {
-    var tabs = ["metcon", "strength", "progress", "log"]
+    var tabs = ["metcon", "strength", "progress", "log", "calendar"]
       .map(function (name) {
         return {
           name: name,
@@ -572,13 +596,23 @@
 
     // First paint: reuse today's workout if one was already generated
     // today (e.g. page reload), otherwise generate a deterministic one
-    // seeded from the date so it's stable until explicitly regenerated.
+    // seeded from the date so it's stable until explicitly regenerated —
+    // unless today was planned (Calendar tab) as a rest day, or with
+    // specific Metcon settings to pre-fill before generating.
     var existing = MetconStorage.getEntry(todayKey);
     if (existing && existing.workout) {
       renderWorkout(existing.workout);
       renderLogForm(existing);
     } else {
-      generateAndSave({ deterministic: true });
+      var todaysPlan = MetconStorage.getPlan(todayKey);
+      if (todaysPlan && todaysPlan.type === "rest") {
+        renderRestDay();
+      } else {
+        if (todaysPlan && todaysPlan.type === "metcon" && todaysPlan.metcon) {
+          applyPlanToControls(todaysPlan.metcon);
+        }
+        generateAndSave({ deterministic: true });
+      }
     }
 
     renderHistory();

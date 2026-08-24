@@ -112,6 +112,29 @@ Ad hoc entries also show up merged into the Metcon tab's own History list
 and refreshes on `metcon:tab-activated` so an entry logged on the Log tab
 appears there right away.
 
+- **`js/calendar.js`** — the Calendar tab: a classic month grid (prev/next
+  navigation, today highlighted) where each day shows small badges for
+  what happened that day — solid for a logged Metcon/Strength/ad hoc
+  session, dashed for a *planned* Metcon/Strength day that hasn't
+  happened yet, plus a rest badge for a planned rest day. Clicking any
+  day (past or future) shows everything logged that date below the grid,
+  and a "Plan this day" form to set/clear a lightweight plan — a type
+  (Metcon/Strength/Rest) plus, for Metcon, a duration/intensity/format,
+  or for Strength, a day + week. Plans live in their own date-keyed store
+  (`MetconStorage`'s `savePlan`/`getPlan`/`deletePlan`/`loadPlans`,
+  key `metcon.plans.v1`) — a plan never locks in an actual generated
+  workout, it just states intent for that date.
+
+  Today's plan (if any) is auto-applied by the tab it matches, but only
+  when nothing's been logged for today yet — it never overrides an
+  already-saved session: a Metcon plan pre-fills Duration/Intensity/
+  Format before the day's workout generates (`applyPlanToControls` in
+  `app.js`); a Strength plan pre-selects that day + week
+  (`js/strength.js`'s `init()`); a Rest plan shows a calm "Rest day
+  planned" card in place of a generated Metcon workout (Generate still
+  works normally if you change your mind) and a small banner on the
+  Strength tab.
+
 ## Customizing your gear
 
 Click **⚙ Settings** to change what equipment you have, how much of it

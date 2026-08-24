@@ -25,6 +25,7 @@
     logSaveBtn: document.getElementById("strength-log-save-btn"),
     logSavedMsg: document.getElementById("strength-log-saved-msg"),
     historyList: document.getElementById("strength-history-list"),
+    restNote: document.getElementById("strength-rest-note"),
   };
 
   if (!els.daySelect) return; // strength tab markup not present — nothing to do
@@ -477,10 +478,19 @@
 
     var existing = MetconStorage.getStrengthEntry(todayKey);
     var strengthSettings = MetconStorage.loadStrengthSettings();
-    var startingDayId = (existing && existing.dayId) || strengthSettings.dayId || PROGRAM.days[0].id;
+    // A Calendar-tab plan for today only steps in when nothing's been
+    // logged for today yet — it never overrides an already-saved session.
+    var todaysPlan = MetconStorage.getPlan(todayKey);
+    var plannedStrength = !existing && todaysPlan && todaysPlan.type === "strength" && todaysPlan.strength;
+    var startingDayId = (existing && existing.dayId) || (plannedStrength && todaysPlan.strength.dayId) || strengthSettings.dayId || PROGRAM.days[0].id;
     if (!findDay(startingDayId)) startingDayId = PROGRAM.days[0].id;
-    var startingWeek = (existing && existing.weekNumber) || strengthSettings.weekNumber || 1;
+    var startingWeek = (existing && existing.weekNumber) || (plannedStrength && todaysPlan.strength.weekNumber) || strengthSettings.weekNumber || 1;
     if (startingWeek < 1 || startingWeek > WEEK_SCHEMES.length) startingWeek = 1;
+
+    if (els.restNote) {
+      var isRestPlanned = !existing && todaysPlan && todaysPlan.type === "rest";
+      els.restNote.classList.toggle("hidden", !isRestPlanned);
+    }
 
     els.daySelect.value = startingDayId;
     els.weekSelect.value = String(startingWeek);

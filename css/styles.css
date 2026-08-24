@@ -8,6 +8,7 @@
   --accent-dim: #7a3520;
   --ok: #4caf7d;
   --warn: #ffb4a1;
+  --info: #6c9bff;
   --input-bg: #10141a;
   --radius: 10px;
 }
@@ -685,6 +686,194 @@ legend {
   color: #0c1e15;
 }
 
+/* --- Rest day (Metcon/Strength tabs, when today is planned as rest) --- */
+
+.rest-day-card {
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.rest-day-card strong {
+  display: block;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.rest-day-hint {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.rest-note {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin: 0 0 12px;
+}
+
+/* --- Calendar tab -------------------------------------------------------- */
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  background: var(--input-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 4px 3px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.calendar-day:hover {
+  border-color: var(--accent);
+}
+
+.calendar-day.other-month {
+  color: var(--text-dim);
+  opacity: 0.45;
+}
+
+.calendar-day.today {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.calendar-day.selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.calendar-day-number {
+  font-size: 0.85rem;
+}
+
+.calendar-day-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  min-height: 16px;
+}
+
+.cal-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #0c1013;
+  line-height: 1;
+}
+
+.cal-dot-metcon {
+  background: var(--accent);
+}
+
+.cal-dot-strength {
+  background: var(--info);
+}
+
+.cal-dot-adhoc {
+  background: var(--ok);
+}
+
+.cal-dot-rest {
+  background: var(--text-dim);
+}
+
+.cal-dot.planned {
+  background: transparent;
+  border: 1.5px dashed currentColor;
+  color: var(--text-dim);
+}
+.cal-dot-metcon.planned {
+  color: var(--accent);
+}
+.cal-dot-strength.planned {
+  color: var(--info);
+}
+
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#calendar-detail-panel h3 {
+  font-size: 0.95rem;
+  margin: 18px 0 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--panel-border);
+}
+
+.cal-detail-entry {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.cal-detail-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cal-strength-badge {
+  background: var(--info);
+  color: #0c1013;
+}
+
 @media (max-width: 480px) {
   .control-row {
     flex-direction: column;
@@ -695,5 +884,17 @@ legend {
   }
   .set-label {
     width: 44px;
+  }
+  .calendar-day {
+    min-height: 42px;
+    padding: 3px 2px;
+  }
+  .calendar-day-number {
+    font-size: 0.75rem;
+  }
+  .cal-dot {
+    width: 12px;
+    height: 12px;
+    font-size: 0.55rem;
   }
 }
