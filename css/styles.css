@@ -487,6 +487,12 @@ legend {
   min-width: 0;
 }
 
+.set-weight::placeholder,
+.set-reps::placeholder {
+  color: var(--text-dim);
+  opacity: 1;
+}
+
 .superset-group {
   border-left: 3px solid var(--accent);
   padding-left: 10px;
